@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+        // Cores personalizadas para o aplicativo LevelUp Saúde
+        levelup: {
+          primary: '#4CAF50',      // Verde principal
+          secondary: '#2196F3',    // Azul para destaque
+          accent: '#FF9800',       // Laranja para elementos de ação
+          success: '#8BC34A',      // Verde claro para sucesso
+          warning: '#FFC107',      // Amarelo para avisos
+          danger: '#F44336',       // Vermelho para erros
+          light: '#F1F8E9',        // Verde muito claro para fundos
+          dark: '#1B5E20',         // Verde escuro para textos importantes
+        }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +96,21 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+        'pulse-scale': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.05)' },
+        },
+        'slide-in': {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse-scale': 'pulse-scale 2s ease-in-out infinite',
+        'slide-in': 'slide-in 0.3s ease-out forwards'
 			}
 		}
 	},
