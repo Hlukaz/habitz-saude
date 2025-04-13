@@ -8,13 +8,16 @@ import {
   Bell, 
   Activity, 
   Smartphone,
-  LogOut 
+  LogOut,
+  Flame
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import AchievementsList, { Achievement } from '@/components/AchievementsList';
+import StreakDisplay from '@/components/StreakDisplay';
 
 // Tipos para o perfil do usuário
 type UserProfile = {
@@ -26,6 +29,9 @@ type UserProfile = {
   nutrition_points: number;
   total_points: number;
   created_at: string;
+  streak: number;
+  last_activity_date: string | null;
+  last_streak_update: string | null;
 };
 
 // Buscar perfil do usuário
@@ -43,6 +49,34 @@ const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
   return data;
 };
 
+// Buscar todas as conquistas disponíveis
+const fetchAchievements = async (): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .order('required_points', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+};
+
+// Buscar conquistas desbloqueadas pelo usuário
+const fetchUserAchievements = async (userId: string): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select('*, achievement_id(*)')
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+};
+
 // Formatar a data para exibição
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -53,43 +87,23 @@ const formatDate = (dateString: string) => {
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 };
 
-const mockAchievements = [
-  {
-    id: 'achievement-1',
-    name: 'Primeira Semana',
-    description: 'Completou todos os objetivos por uma semana',
-    icon: Trophy,
-    unlocked: true
-  },
-  {
-    id: 'achievement-2',
-    name: 'Mestre da Alimentação',
-    description: 'Registrou 20 refeições saudáveis',
-    icon: Trophy,
-    unlocked: true
-  },
-  {
-    id: 'achievement-3',
-    name: 'Desafio Vencedor',
-    description: 'Ganhou seu primeiro desafio',
-    icon: Trophy,
-    unlocked: true
-  },
-  {
-    id: 'achievement-4',
-    name: 'Maratonista',
-    description: 'Completou 30 dias de exercícios',
-    icon: Trophy,
-    unlocked: false
-  }
-];
-
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
   
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => user ? fetchUserProfile(user.id) : Promise.reject('Usuário não autenticado'),
+    enabled: !!user
+  });
+
+  const { data: allAchievements, isLoading: achievementsLoading } = useQuery({
+    queryKey: ['achievements'],
+    queryFn: fetchAchievements
+  });
+
+  const { data: userAchievements, isLoading: userAchievementsLoading } = useQuery({
+    queryKey: ['userAchievements', user?.id],
+    queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('Usuário não autenticado'),
     enabled: !!user
   });
 
@@ -103,11 +117,36 @@ const ProfilePage = () => {
     }
   };
 
-  if (isLoading) {
+  // Processar e combinar dados de conquistas
+  const processAchievements = (): Achievement[] => {
+    if (!allAchievements || !userAchievements) return [];
+    
+    // Criar mapa de conquistas desbloqueadas pelo usuário
+    const unlockedMap = new Map();
+    userAchievements.forEach(ua => {
+      unlockedMap.set(ua.achievement_id.id, {
+        unlocked: true,
+        unlocked_at: ua.unlocked_at
+      });
+    });
+    
+    // Combinar com todas as conquistas
+    return allAchievements.map(achievement => ({
+      id: achievement.id,
+      name: achievement.name,
+      description: achievement.description,
+      icon: achievement.icon,
+      required_points: achievement.required_points,
+      unlocked: unlockedMap.has(achievement.id),
+      unlocked_at: unlockedMap.get(achievement.id)?.unlocked_at
+    }));
+  };
+
+  if (profileLoading || achievementsLoading || userAchievementsLoading) {
     return <div className="p-4 text-center">Carregando perfil...</div>;
   }
 
-  if (error) {
+  if (profileError) {
     return (
       <div className="p-4 text-center">
         <p className="text-red-500">Erro ao carregar perfil</p>
@@ -130,12 +169,15 @@ const ProfilePage = () => {
     activity_points: 0,
     nutrition_points: 0,
     total_points: 0,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    streak: 0,
+    last_activity_date: null,
+    last_streak_update: null
   };
 
   const level = Math.floor(userData.total_points / 50) + 1;
   const xpToNextLevel = (userData.total_points % 50) / 50 * 100;
-  const streak = 12; // Placeholder até implementarmos rastreamento de streak
+  const achievements = processAchievements();
 
   return (
     <div className="pb-20">
@@ -169,8 +211,8 @@ const ProfilePage = () => {
                   Nível {level}
                 </div>
                 <div className="bg-levelup-light text-levelup-primary text-xs font-medium px-2 py-1 rounded-full flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {streak} dias seguidos
+                  <Flame className="w-3 h-3 mr-1" />
+                  {userData.streak} dias seguidos
                 </div>
               </div>
             </div>
@@ -206,29 +248,21 @@ const ProfilePage = () => {
         </div>
       </div>
       
+      {/* Streak Display */}
+      <div className="px-4 mb-6">
+        <StreakDisplay 
+          streak={userData.streak || 0}
+          lastActivityDate={userData.last_activity_date}
+          className="shadow-sm"
+        />
+      </div>
+      
       {/* Achievements */}
       <div className="px-4 mb-6">
-        <h2 className="text-lg font-bold mb-3">Conquistas</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {mockAchievements.map(achievement => (
-            <div 
-              key={achievement.id}
-              className={cn(
-                "bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center",
-                !achievement.unlocked && "opacity-50"
-              )}
-            >
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center mb-2",
-                achievement.unlocked ? "bg-levelup-accent text-white" : "bg-muted text-muted-foreground"
-              )}>
-                <achievement.icon className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium text-sm mb-1">{achievement.name}</h3>
-              <p className="text-xs text-muted-foreground">{achievement.description}</p>
-            </div>
-          ))}
-        </div>
+        <AchievementsList 
+          achievements={achievements} 
+          totalPoints={userData.total_points}
+        />
       </div>
       
       {/* Settings */}

@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          created_at: string | null
+          description: string
+          icon: string
+          id: string
+          name: string
+          required_points: number
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          icon: string
+          id?: string
+          name: string
+          required_points?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          required_points?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activity_points: number | null
@@ -16,7 +43,10 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          last_activity_date: string | null
+          last_streak_update: string | null
           nutrition_points: number | null
+          streak: number | null
           total_points: number | null
           updated_at: string | null
           username: string | null
@@ -27,7 +57,10 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          last_activity_date?: string | null
+          last_streak_update?: string | null
           nutrition_points?: number | null
+          streak?: number | null
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
@@ -38,12 +71,51 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          last_activity_date?: string | null
+          last_streak_update?: string | null
           nutrition_points?: number | null
+          streak?: number | null
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
         }
         Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

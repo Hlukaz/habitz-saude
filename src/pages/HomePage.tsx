@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CalendarRange, Camera, Compass, Bell } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,6 +5,7 @@ import PointsDisplay from '@/components/PointsDisplay';
 import CheckInButton from '@/components/CheckInButton';
 import FriendRanking from '@/components/FriendRanking';
 import CheckInModal from '@/components/CheckInModal';
+import StreakDisplay from '@/components/StreakDisplay';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,9 @@ type UserProfile = {
   activity_points: number;
   nutrition_points: number;
   total_points: number;
+  streak: number;
+  last_activity_date: string | null;
+  last_streak_update: string | null;
 };
 
 // Tipos para o ranking de amigos
@@ -120,6 +123,7 @@ const updateUserPoints = async (
     throw error;
   }
 
+  // O trigger do PostgreSQL irá atualizar automaticamente o streak
   return data;
 };
 
@@ -225,7 +229,10 @@ const HomePage = () => {
     avatar_url: null,
     activity_points: 0,
     nutrition_points: 0,
-    total_points: 0
+    total_points: 0,
+    streak: 0,
+    last_activity_date: null,
+    last_streak_update: null
   };
 
   return (
@@ -255,6 +262,14 @@ const HomePage = () => {
           activityPoints={userData.activity_points} 
           nutritionPoints={userData.nutrition_points} 
           totalPoints={userData.total_points} 
+        />
+      </div>
+      
+      {/* Streak Display */}
+      <div className="px-4 mb-5">
+        <StreakDisplay 
+          streak={userData.streak || 0}
+          lastActivityDate={userData.last_activity_date}
         />
       </div>
       

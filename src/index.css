@@ -5,83 +5,62 @@
 
 @layer base {
   :root {
-    --background: 88 50% 98%;
-    --foreground: 122 39% 20%;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 122 39% 20%;
-
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 122 39% 20%;
-
-    --primary: 122 39% 49%;
-    --primary-foreground: 355 100% 100%;
-
-    --secondary: 199 48% 52%;
-    --secondary-foreground: 355 100% 100%;
-
-    --muted: 88 50% 92%;
-    --muted-foreground: 122 39% 40%;
-
-    --accent: 36 100% 50%;
-    --accent-foreground: 355 100% 100%;
-
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 122 39% 85%;
-    --input: 122 39% 85%;
-    --ring: 122 39% 49%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 88 50% 98%;
-    --sidebar-foreground: 122 39% 20%;
-    --sidebar-primary: 122 39% 49%;
-    --sidebar-primary-foreground: 355 100% 100%;
-    --sidebar-accent: 122 39% 95%;
-    --sidebar-accent-foreground: 122 39% 20%;
-    --sidebar-border: 122 39% 85%;
-    --sidebar-ring: 122 39% 49%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    --levelup-primary: 221 83% 53%;
+    --levelup-secondary: 280 85% 60%;
+    --levelup-accent: 35 91% 55%;
+    --levelup-light: 210 40% 96%;
+    --levelup-dark: 222 47% 11%;
+    --levelup-danger: 0 84% 60%;
+    --levelup-success: 142 76% 36%;
   }
 
   .dark {
-    --background: 122 39% 10%;
-    --foreground: 88 50% 95%;
-
-    --card: 122 39% 15%;
-    --card-foreground: 88 50% 95%;
-
-    --popover: 122 39% 15%;
-    --popover-foreground: 88 50% 95%;
-
-    --primary: 122 39% 49%;
-    --primary-foreground: 355 100% 100%;
-
-    --secondary: 199 48% 52%;
-    --secondary-foreground: 355 100% 100%;
-
-    --muted: 122 39% 20%;
-    --muted-foreground: 122 39% 70%;
-
-    --accent: 36 100% 50%;
-    --accent-foreground: 355 100% 100%;
-
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 122 39% 25%;
-    --input: 122 39% 25%;
-    --ring: 122 39% 49%;
-
-    --sidebar-background: 122 39% 15%;
-    --sidebar-foreground: 88 50% 95%;
-    --sidebar-primary: 122 39% 49%;
-    --sidebar-primary-foreground: 355 100% 100%;
-    --sidebar-accent: 122 39% 20%;
-    --sidebar-accent-foreground: 88 50% 95%;
-    --sidebar-border: 122 39% 25%;
-    --sidebar-ring: 122 39% 49%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --levelup-primary: 221 83% 65%;
+    --levelup-secondary: 280 85% 65%;
+    --levelup-accent: 35 91% 65%;
+    --levelup-light: 217 33% 17%;
+    --levelup-dark: 210 40% 98%;
+    --levelup-danger: 0 84% 65%;
+    --levelup-success: 142 76% 45%;
   }
 }
 
@@ -89,35 +68,44 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer components {
-  .levelup-card {
-    @apply bg-white rounded-xl shadow-md p-5 border border-border hover:shadow-lg transition-shadow;
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
   }
-  
-  .levelup-button-primary {
-    @apply bg-levelup-primary text-white font-medium rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all hover:bg-levelup-dark;
+  50% {
+    transform: scale(1.05);
   }
-  
-  .levelup-button-secondary {
-    @apply bg-levelup-secondary text-white font-medium rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all hover:brightness-90;
+}
+
+.animate-pulse-scale {
+  animation: pulse-scale 1.5s ease-in-out infinite;
+}
+
+.levelup-progress {
+  @apply w-full h-2 bg-muted rounded-full overflow-hidden;
+}
+
+.levelup-progress-bar {
+  @apply h-full bg-levelup-primary rounded-full transition-all duration-500;
+}
+
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .levelup-button-accent {
-    @apply bg-levelup-accent text-white font-medium rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all hover:brightness-90;
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .levelup-progress {
-    @apply h-3 rounded-full bg-muted overflow-hidden;
-  }
-  
-  .levelup-progress-bar {
-    @apply h-full bg-levelup-primary transition-all duration-500;
-  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
 }
