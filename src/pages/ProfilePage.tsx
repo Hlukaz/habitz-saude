@@ -12,17 +12,45 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock data for demonstration
-const mockUserData = {
-  id: 'user-1',
-  name: 'Usuário Exemplo',
-  email: 'usuario@exemplo.com',
-  totalPoints: 156,
-  avatarUrl: 'https://source.unsplash.com/random/100x100/?person',
-  memberSince: 'Abril 2023',
-  level: 4,
-  streak: 12
+// Tipos para o perfil do usuário
+type UserProfile = {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+  activity_points: number;
+  nutrition_points: number;
+  total_points: number;
+  created_at: string;
+};
+
+// Buscar perfil do usuário
+const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+// Formatar a data para exibição
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const months = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
 };
 
 const mockAchievements = [
@@ -57,6 +85,58 @@ const mockAchievements = [
 ];
 
 const ProfilePage = () => {
+  const { user, signOut } = useAuth();
+  
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: () => user ? fetchUserProfile(user.id) : Promise.reject('Usuário não autenticado'),
+    enabled: !!user
+  });
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Sessão encerrada com sucesso');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast.error('Erro ao encerrar sessão');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando perfil...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500">Erro ao carregar perfil</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-levelup-primary"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    );
+  }
+
+  // Fallback para caso o perfil não esteja disponível
+  const userData = profile || {
+    id: user?.id || '',
+    username: user?.email?.split('@')[0] || 'Usuário',
+    full_name: user?.user_metadata?.full_name || 'Usuário',
+    avatar_url: null,
+    activity_points: 0,
+    nutrition_points: 0,
+    total_points: 0,
+    created_at: new Date().toISOString()
+  };
+
+  const level = Math.floor(userData.total_points / 50) + 1;
+  const xpToNextLevel = (userData.total_points % 50) / 50 * 100;
+  const streak = 12; // Placeholder até implementarmos rastreamento de streak
+
   return (
     <div className="pb-20">
       {/* Header */}
@@ -73,8 +153,8 @@ const ProfilePage = () => {
           <div className="flex items-center mb-4">
             <div className="relative">
               <img
-                src={mockUserData.avatarUrl}
-                alt={mockUserData.name}
+                src={userData.avatar_url || "https://source.unsplash.com/random/100x100/?person"}
+                alt={userData.full_name}
                 className="w-20 h-20 rounded-full object-cover"
               />
               <button className="absolute bottom-0 right-0 w-8 h-8 bg-levelup-primary rounded-full flex items-center justify-center text-white shadow-sm">
@@ -82,15 +162,15 @@ const ProfilePage = () => {
               </button>
             </div>
             <div className="ml-4">
-              <h2 className="text-xl font-bold">{mockUserData.name}</h2>
-              <p className="text-muted-foreground">{mockUserData.email}</p>
+              <h2 className="text-xl font-bold">{userData.full_name}</h2>
+              <p className="text-muted-foreground">{user?.email}</p>
               <div className="flex items-center mt-1">
                 <div className="bg-levelup-light text-levelup-dark text-xs font-medium px-2 py-1 rounded-full mr-2">
-                  Nível {mockUserData.level}
+                  Nível {level}
                 </div>
                 <div className="bg-levelup-light text-levelup-primary text-xs font-medium px-2 py-1 rounded-full flex items-center">
                   <Calendar className="w-3 h-3 mr-1" />
-                  {mockUserData.streak} dias seguidos
+                  {streak} dias seguidos
                 </div>
               </div>
             </div>
@@ -98,12 +178,12 @@ const ProfilePage = () => {
           
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-muted-foreground">XP para o próximo nível</span>
-            <span className="text-sm font-medium">70%</span>
+            <span className="text-sm font-medium">{xpToNextLevel.toFixed(0)}%</span>
           </div>
           <div className="levelup-progress mb-4">
             <div 
               className="levelup-progress-bar" 
-              style={{ width: '70%' }}
+              style={{ width: `${xpToNextLevel}%` }}
             />
           </div>
           
@@ -113,14 +193,14 @@ const ProfilePage = () => {
                 <Trophy className="w-4 h-4 text-levelup-accent mr-1" />
                 <span className="font-medium">Total de Pontos</span>
               </div>
-              <p className="text-lg font-bold">{mockUserData.totalPoints}</p>
+              <p className="text-lg font-bold">{userData.total_points}</p>
             </div>
             <div className="bg-levelup-light p-3 rounded-lg">
               <div className="flex items-center mb-2">
                 <Calendar className="w-4 h-4 text-levelup-accent mr-1" />
                 <span className="font-medium">Membro desde</span>
               </div>
-              <p className="text-lg font-bold">{mockUserData.memberSince}</p>
+              <p className="text-lg font-bold">{formatDate(userData.created_at)}</p>
             </div>
           </div>
         </div>
@@ -169,7 +249,7 @@ const ProfilePage = () => {
           </button>
           <button 
             className="w-full p-4 flex items-center text-levelup-danger hover:bg-muted/20"
-            onClick={() => toast.success("Esta função estará disponível em breve!")}
+            onClick={handleLogout}
           >
             <LogOut className="w-5 h-5 mr-3" />
             <span>Sair</span>

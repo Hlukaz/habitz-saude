@@ -10,7 +10,10 @@ import FriendsPage from "./pages/FriendsPage";
 import ChallengesPage from "./pages/ChallengesPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./context/AuthContext";
+import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -20,16 +23,21 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="friends" element={<FriendsPage />} />
-            <Route path="challenges" element={<ChallengesPage />} />
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="friends" element={<FriendsPage />} />
+                <Route path="challenges" element={<ChallengesPage />} />
+                <Route path="chat" element={<ChatPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
