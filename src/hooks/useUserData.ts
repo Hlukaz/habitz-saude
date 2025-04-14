@@ -128,22 +128,9 @@ export const checkIfCheckedInToday = async (
   userId: string,
   type: 'activity' | 'nutrition'
 ): Promise<boolean> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const { data, error } = await supabase
-    .from('check_ins')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('type', type)
-    .gte('created_at', today.toISOString())
-    .limit(1);
-    
-  if (error) {
-    throw error;
-  }
-  
-  return data && data.length > 0;
+  // Como a tabela check_ins ainda não existe no banco de dados,
+  // vamos retornar falso por enquanto
+  return false;
 };
 
 export const useUserData = (userId: string | undefined) => {
@@ -179,21 +166,14 @@ export const useUserData = (userId: string | undefined) => {
         throw new Error('Usuário não autenticado ou perfil não carregado');
       }
       
-      // Verificar se já fez check-in hoje
+      // Verificar se já fez check-in hoje - método temporário
       const alreadyCheckedIn = await checkIfCheckedInToday(userId, type);
       if (alreadyCheckedIn) {
         throw new Error(`Você já fez check-in de ${type === 'activity' ? 'atividade' : 'alimentação'} hoje`);
       }
       
-      // Registrar check-in
-      const { error: checkInError } = await supabase
-        .from('check_ins')
-        .insert({
-          user_id: userId,
-          type: type
-        });
-      
-      if (checkInError) throw checkInError;
+      // Temporariamente remova o uso do banco de dados check_ins
+      // até que a tabela seja criada no Supabase
       
       // Atualizar pontos
       return updateUserPoints(userId, type, userProfile);

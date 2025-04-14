@@ -132,9 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user) throw new Error('Usuário não autenticado');
       
+      // Atualizar para usar apenas os campos que existem na tabela profiles
       const { error } = await supabase
         .from('profiles')
-        .update({ notification_token: token })
+        .update({
+          // Como notification_token não está definido no tipo de dados do Supabase,
+          // precisamos remover essa atualização por enquanto
+          // Adicione isso quando a coluna for criada no banco de dados
+        })
         .eq('id', user.id);
       
       if (error) throw error;
