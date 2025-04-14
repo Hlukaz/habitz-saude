@@ -12,6 +12,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  registerNotifications: (token: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,8 +128,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const registerNotifications = async (token: string) => {
+    try {
+      if (!user) throw new Error('Usuário não autenticado');
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_token: token })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Notificações ativadas com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao registrar notificações:', error);
+      toast.error(error.message || 'Erro ao ativar notificações');
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user, 
+      loading, 
+      signUp, 
+      signIn, 
+      signOut,
+      registerNotifications
+    }}>
       {children}
     </AuthContext.Provider>
   );

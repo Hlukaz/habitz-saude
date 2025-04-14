@@ -14,8 +14,11 @@ export type UserProfile = {
   nutrition_points: number;
   total_points: number;
   streak: number;
+  streak_blocks: number;
   last_activity_date: string | null;
   last_streak_update: string | null;
+  last_block_reset: string | null;
+  notification_token: string | null;
 };
 
 // Tipos para o ranking de amigos
@@ -120,6 +123,29 @@ export const updateUserPoints = async (
   return data;
 };
 
+// Verificar se o check-in já foi feito hoje
+export const checkIfCheckedInToday = async (
+  userId: string,
+  type: 'activity' | 'nutrition'
+): Promise<boolean> => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const { data, error } = await supabase
+    .from('check_ins')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .gte('created_at', today.toISOString())
+    .limit(1);
+    
+  if (error) {
+    throw error;
+  }
+  
+  return data && data.length > 0;
+};
+
 export const useUserData = (userId: string | undefined) => {
   const [checkInType, setCheckInType] = useState<'activity' | 'nutrition' | null>(null);
   const queryClient = useQueryClient();
@@ -148,19 +174,37 @@ export const useUserData = (userId: string | undefined) => {
 
   // Mutação para atualizar pontos
   const updatePointsMutation = useMutation({
-    mutationFn: (type: 'activity' | 'nutrition') => {
+    mutationFn: async (type: 'activity' | 'nutrition') => {
       if (!userId || !userProfile) {
         throw new Error('Usuário não autenticado ou perfil não carregado');
       }
+      
+      // Verificar se já fez check-in hoje
+      const alreadyCheckedIn = await checkIfCheckedInToday(userId, type);
+      if (alreadyCheckedIn) {
+        throw new Error(`Você já fez check-in de ${type === 'activity' ? 'atividade' : 'alimentação'} hoje`);
+      }
+      
+      // Registrar check-in
+      const { error: checkInError } = await supabase
+        .from('check_ins')
+        .insert({
+          user_id: userId,
+          type: type
+        });
+      
+      if (checkInError) throw checkInError;
+      
+      // Atualizar pontos
       return updateUserPoints(userId, type, userProfile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
       toast.success('Check-in realizado com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar pontos:', error);
-      toast.error('Erro ao realizar check-in. Tente novamente.');
+      toast.error(error.message || 'Erro ao realizar check-in. Tente novamente.');
     }
   });
 

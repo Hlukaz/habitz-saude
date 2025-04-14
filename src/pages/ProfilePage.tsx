@@ -58,8 +58,11 @@ const ProfilePage = () => {
     total_points: 0,
     created_at: new Date().toISOString(),
     streak: 0,
+    streak_blocks: 2,
     last_activity_date: null,
-    last_streak_update: null
+    last_streak_update: null,
+    last_block_reset: null,
+    notification_token: null
   };
 
   const level = Math.floor(userData.total_points / 50) + 1;
@@ -85,6 +88,8 @@ const ProfilePage = () => {
         <StreakDisplay 
           streak={userData.streak || 0}
           lastActivityDate={userData.last_activity_date}
+          streakBlocks={userData.streak_blocks || 2}
+          lastBlockReset={userData.last_block_reset}
           className="shadow-sm"
         />
       </div>

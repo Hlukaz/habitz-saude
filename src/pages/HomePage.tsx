@@ -54,8 +54,11 @@ const HomePage = () => {
     nutrition_points: 0,
     total_points: 0,
     streak: 0,
+    streak_blocks: 2,
     last_activity_date: null,
-    last_streak_update: null
+    last_streak_update: null,
+    last_block_reset: null,
+    notification_token: null
   };
 
   return (
@@ -77,7 +80,22 @@ const HomePage = () => {
         <StreakDisplay 
           streak={userData.streak || 0}
           lastActivityDate={userData.last_activity_date}
+          streakBlocks={userData.streak_blocks || 2}
+          lastBlockReset={userData.last_block_reset}
         />
+      </div>
+      
+      {/* Aplicativo Intro */}
+      <div className="px-4 mb-5">
+        <div className="bg-card p-4 rounded-lg shadow-sm">
+          <h2 className="font-bold text-lg mb-2">Habitz: uma vida mais saudável</h2>
+          <p className="text-sm text-muted-foreground">
+            Bem-vindo ao Habitz, seu parceiro para criar e manter hábitos saudáveis! 
+            Nosso objetivo é ajudar você a construir uma rotina melhor junto com seus amigos, 
+            através da confiança e parcerias que mantêm a motivação em alta. 
+            Mantenha sua ofensiva diária, participe de desafios e conquiste uma vida mais saudável!
+          </p>
+        </div>
       </div>
       
       {/* Check-in Section */}
