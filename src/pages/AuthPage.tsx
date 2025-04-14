@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +8,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -25,6 +26,8 @@ const registerSchema = z.object({
 const AuthPage = () => {
   const { signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -45,10 +48,12 @@ const AuthPage = () => {
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
+    setAuthError(null);
     try {
       await signIn(values.email, values.password);
     } catch (error) {
       console.error('Login error:', error);
+      // Error is already handled by the toast in context
     } finally {
       setIsLoading(false);
     }
@@ -56,14 +61,26 @@ const AuthPage = () => {
 
   const handleRegister = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
+    setAuthError(null);
     try {
       await signUp(values.email, values.password, values.fullName);
+      // If signup is successful, show success message and reset form
       registerForm.reset();
-    } catch (error) {
+      // Switch to login tab after successful registration
+      setActiveTab("login");
+    } catch (error: any) {
       console.error('Registration error:', error);
+      if (error.message) {
+        setAuthError(error.message);
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setAuthError(null); // Clear errors when switching tabs
   };
 
   return (
@@ -83,7 +100,7 @@ const AuthPage = () => {
 
         <Card className="w-full">
           <CardHeader>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Cadastro</TabsTrigger>
@@ -106,7 +123,14 @@ const AuthPage = () => {
           </CardHeader>
 
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            {authError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
+            
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsContent value="login">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">

@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -58,32 +58,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) throw error;
-      toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+      
+      // Check if user was created successfully
+      if (data.user) {
+        toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+        // Don't navigate after signup - wait for email confirmation
+      } else {
+        toast.error('Erro ao criar conta. Tente novamente.');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar conta');
+      console.error('Signup error:', error);
+      let errorMessage = 'Erro ao criar conta';
+      
+      // Better error messages based on error types
+      if (error.message) {
+        if (error.message.includes('already exists')) {
+          errorMessage = 'Este e-mail já está em uso. Tente fazer login.';
+        } else if (error.message.includes('password')) {
+          errorMessage = 'A senha não atende aos requisitos mínimos.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
       throw error;
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) throw error;
-      navigate('/');
-      toast.success('Login realizado com sucesso!');
+      
+      if (data.user) {
+        navigate('/');
+        toast.success('Login realizado com sucesso!');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao fazer login');
+      console.error('Login error:', error);
+      let errorMessage = 'Erro ao fazer login';
+      
+      if (error.message) {
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Email ou senha incorretos';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
       throw error;
     }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Logout error:', error);
       toast.error(error.message || 'Erro ao sair');
       throw error;
     }
