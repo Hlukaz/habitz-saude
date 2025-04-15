@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { toast } from 'sonner';
 import PointsDisplay from '@/components/PointsDisplay';
@@ -9,9 +8,10 @@ import HomeHeader from '@/components/HomeHeader';
 import CheckInSection from '@/components/CheckInSection';
 import { useUserData } from '@/hooks/useUserData';
 import { formatCurrentWeek } from '@/utils/dateUtils';
-
 const HomePage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const {
     userProfile,
     profileLoading,
@@ -21,27 +21,19 @@ const HomePage = () => {
     rankingError,
     checkInType,
     setCheckInType,
-    handleCheckInSubmit,
+    handleCheckInSubmit
   } = useUserData(user?.id);
-
   const currentWeek = formatCurrentWeek();
-
   if (profileLoading) {
     return <div className="p-4 text-center">Carregando...</div>;
   }
-
   if (profileError) {
-    return (
-      <div className="p-4 text-center">
+    return <div className="p-4 text-center">
         <p className="text-red-500">Erro ao carregar dados do perfil</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-2 text-levelup-primary"
-        >
+        <button onClick={() => window.location.reload()} className="mt-2 text-levelup-primary">
           Tentar novamente
         </button>
-      </div>
-    );
+      </div>;
   }
 
   // Fallback para caso o perfil não esteja disponível
@@ -60,66 +52,32 @@ const HomePage = () => {
     last_block_reset: null,
     notification_token: null
   };
-
-  return (
-    <div className="pb-20">
+  return <div className="pb-20">
       {/* Header */}
       <HomeHeader currentWeek={currentWeek} />
       
       {/* Points Display */}
       <div className="px-4 mb-5">
-        <PointsDisplay 
-          activityPoints={userData.activity_points} 
-          nutritionPoints={userData.nutrition_points} 
-          totalPoints={userData.total_points} 
-        />
+        <PointsDisplay activityPoints={userData.activity_points} nutritionPoints={userData.nutrition_points} totalPoints={userData.total_points} />
       </div>
       
       {/* Streak Display */}
       <div className="px-4 mb-5">
-        <StreakDisplay 
-          streak={userData.streak || 0}
-          lastActivityDate={userData.last_activity_date}
-          streakBlocks={userData.streak_blocks || 2}
-          lastBlockReset={userData.last_block_reset}
-        />
+        <StreakDisplay streak={userData.streak || 0} lastActivityDate={userData.last_activity_date} streakBlocks={userData.streak_blocks || 2} lastBlockReset={userData.last_block_reset} />
       </div>
       
       {/* Aplicativo Intro */}
       <div className="px-4 mb-5">
-        <div className="bg-card p-4 rounded-lg shadow-sm">
-          <h2 className="font-bold text-lg mb-2">Habitz: uma vida mais saudável</h2>
-          <p className="text-sm text-muted-foreground">
-            Bem-vindo ao Habitz, seu parceiro para criar e manter hábitos saudáveis! 
-            Nosso objetivo é ajudar você a construir uma rotina melhor junto com seus amigos, 
-            através da confiança e parcerias que mantêm a motivação em alta. 
-            Mantenha sua ofensiva diária, participe de desafios e conquiste uma vida mais saudável!
-          </p>
-        </div>
+        
       </div>
       
       {/* Check-in Section */}
-      <CheckInSection 
-        checkInType={checkInType}
-        setCheckInType={setCheckInType}
-        onSubmit={handleCheckInSubmit}
-      />
+      <CheckInSection checkInType={checkInType} setCheckInType={setCheckInType} onSubmit={handleCheckInSubmit} />
       
       {/* Friends Ranking */}
       <div className="px-4 mb-6">
-        {rankingLoading ? (
-          <div className="text-center p-4">Carregando ranking...</div>
-        ) : rankingError ? (
-          <div className="text-center p-4 text-red-500">Erro ao carregar ranking</div>
-        ) : (
-          <FriendRanking
-            friends={friendRanking || []}
-            currentUserId={userData.id}
-          />
-        )}
+        {rankingLoading ? <div className="text-center p-4">Carregando ranking...</div> : rankingError ? <div className="text-center p-4 text-red-500">Erro ao carregar ranking</div> : <FriendRanking friends={friendRanking || []} currentUserId={userData.id} />}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;
