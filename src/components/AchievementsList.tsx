@@ -3,6 +3,7 @@ import React from 'react';
 import { Trophy, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import AchievementsDialog from '@/components/AchievementsDialog';
 
 export type Achievement = {
   id: string;
@@ -112,6 +113,14 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
           </div>
         </div>
       )}
+      
+      {/* Botão para ver todas as conquistas */}
+      <div className="mt-4">
+        <AchievementsDialog 
+          achievements={achievements} 
+          totalPoints={totalPoints} 
+        />
+      </div>
     </div>
   );
 };
