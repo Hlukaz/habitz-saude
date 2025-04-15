@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -99,6 +98,7 @@ const AuthPage = () => {
     try {
       await resetPassword(values.email);
       resetPasswordForm.reset();
+      toast.success('E-mail de recuperação enviado! Verifique sua caixa de entrada (incluindo spam).');
     } catch (error: any) {
       console.error('Password reset error:', error);
       if (error.message) {

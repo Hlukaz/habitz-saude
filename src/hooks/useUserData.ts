@@ -47,7 +47,6 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
 
 // Buscar ranking de amigos (mock por enquanto)
 export const fetchFriendRanking = async (userId: string): Promise<FriendRank[]> => {
-  // Simulando busca de ranking - isso pode ser implementado no futuro com dados reais
   return [{
     id: 'user-2',
     name: 'Ana Silva',
@@ -92,7 +91,6 @@ export const updateUserPoints = async (
   type: 'activity' | 'nutrition', 
   currentProfile: UserProfile
 ): Promise<UserProfile> => {
-  // Calcula os novos pontos
   const newActivityPoints = type === 'activity' 
     ? currentProfile.activity_points + 1 
     : currentProfile.activity_points;
@@ -103,7 +101,6 @@ export const updateUserPoints = async (
   
   const newTotalPoints = newActivityPoints + newNutritionPoints;
 
-  // Atualiza o perfil no Supabase
   const { data, error } = await supabase
     .from('profiles')
     .update({ 
@@ -143,8 +140,6 @@ export const checkIfCheckedInToday = async (
   userId: string,
   type: 'activity' | 'nutrition'
 ): Promise<boolean> => {
-  // Como a tabela check_ins ainda não existe no banco de dados,
-  // vamos retornar falso por enquanto
   return false;
 };
 
@@ -152,7 +147,6 @@ export const useUserData = (userId: string | undefined) => {
   const [checkInType, setCheckInType] = useState<'activity' | 'nutrition' | null>(null);
   const queryClient = useQueryClient();
 
-  // Buscar dados do perfil do usuário
   const { 
     data: userProfile, 
     isLoading: profileLoading, 
@@ -163,7 +157,6 @@ export const useUserData = (userId: string | undefined) => {
     enabled: !!userId
   });
 
-  // Buscar ranking de amigos
   const {
     data: friendRanking,
     isLoading: rankingLoading,
@@ -174,23 +167,17 @@ export const useUserData = (userId: string | undefined) => {
     enabled: !!userId
   });
 
-  // Mutação para atualizar pontos
   const updatePointsMutation = useMutation({
     mutationFn: async (type: 'activity' | 'nutrition') => {
       if (!userId || !userProfile) {
         throw new Error('Usuário não autenticado ou perfil não carregado');
       }
       
-      // Verificar se já fez check-in hoje - método temporário
       const alreadyCheckedIn = await checkIfCheckedInToday(userId, type);
       if (alreadyCheckedIn) {
         throw new Error(`Você já fez check-in de ${type === 'activity' ? 'atividade' : 'alimentação'} hoje`);
       }
       
-      // Temporariamente remova o uso do banco de dados check_ins
-      // até que a tabela seja criada no Supabase
-      
-      // Atualizar pontos
       return updateUserPoints(userId, type, userProfile);
     },
     onSuccess: () => {

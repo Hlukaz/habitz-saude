@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { useProfileData } from '@/hooks/useProfileData';
+import { useProfileData, UserProfile } from '@/hooks/useProfileData';
 import AchievementsList from '@/components/AchievementsList';
 import StreakDisplay from '@/components/StreakDisplay';
 import ProfileHeader from '@/components/ProfileHeader';
@@ -48,21 +47,22 @@ const ProfilePage = () => {
   }
 
   // Fallback para caso o perfil não esteja disponível
-  const userData = profile || {
+  const userData: UserProfile = profile || {
     id: user?.id || '',
     username: user?.email?.split('@')[0] || 'Usuário',
     full_name: user?.user_metadata?.full_name || 'Usuário',
-    avatar_url: null,
+    avatar_url: user?.user_metadata?.avatar_url || '',
     activity_points: 0,
     nutrition_points: 0,
     total_points: 0,
-    created_at: new Date().toISOString(),
     streak: 0,
     streak_blocks: 2,
     last_activity_date: null,
     last_streak_update: null,
     last_block_reset: null,
-    notification_token: null
+    notification_token: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 
   const level = Math.floor(userData.total_points / 50) + 1;
