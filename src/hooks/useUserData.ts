@@ -1,25 +1,8 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-// Tipos para o perfil do usuário
-export type UserProfile = {
-  id: string;
-  username: string;
-  full_name: string;
-  avatar_url: string | null;
-  activity_points: number;
-  nutrition_points: number;
-  total_points: number;
-  streak: number;
-  streak_blocks: number;
-  last_activity_date: string | null;
-  last_streak_update: string | null;
-  last_block_reset: string | null;
-  notification_token: string | null;
-};
+import { UserProfile } from './useProfileData';
 
 // Tipos para o ranking de amigos
 export type FriendRank = {
