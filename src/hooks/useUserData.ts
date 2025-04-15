@@ -26,7 +26,23 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
     throw error;
   }
 
-  return data;
+  return {
+    id: data.id,
+    username: data.username,
+    full_name: data.full_name,
+    avatar_url: data.avatar_url,
+    activity_points: data.activity_points || 0,
+    nutrition_points: data.nutrition_points || 0,
+    total_points: data.total_points || 0,
+    streak: data.streak || 0,
+    streak_blocks: data.streak_blocks || 2,
+    last_activity_date: data.last_activity_date,
+    last_streak_update: data.last_streak_update,
+    last_block_reset: data.last_block_reset,
+    notification_token: data.notification_token,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
 };
 
 // Buscar ranking de amigos (mock por enquanto)
@@ -103,7 +119,23 @@ export const updateUserPoints = async (
     throw error;
   }
 
-  return data;
+  return {
+    id: data.id,
+    username: data.username,
+    full_name: data.full_name,
+    avatar_url: data.avatar_url,
+    activity_points: data.activity_points || 0,
+    nutrition_points: data.nutrition_points || 0,
+    total_points: data.total_points || 0,
+    streak: data.streak || 0,
+    streak_blocks: data.streak_blocks || 2,
+    last_activity_date: data.last_activity_date,
+    last_streak_update: data.last_streak_update,
+    last_block_reset: data.last_block_reset,
+    notification_token: data.notification_token,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
 };
 
 // Verificar se o check-in já foi feito hoje

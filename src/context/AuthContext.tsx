@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   registerNotifications: (token: string) => Promise<void>;
 };
 
@@ -24,7 +24,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         setSession(newSession);
@@ -36,7 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -60,10 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      // Check if user was created successfully
       if (data.user) {
         toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
-        // Don't navigate after signup - wait for email confirmation
       } else {
         toast.error('Erro ao criar conta. Tente novamente.');
       }
@@ -71,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Signup error:', error);
       let errorMessage = 'Erro ao criar conta';
       
-      // Better error messages based on error types
       if (error.message) {
         if (error.message.includes('already exists')) {
           errorMessage = 'Este e-mail já está em uso. Tente fazer login.';
@@ -128,17 +123,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/auth?reset=true',
+      });
+      
+      if (error) throw error;
+      
+      toast.success('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+    } catch (error: any) {
+      console.error('Erro ao solicitar redefinição de senha:', error);
+      let errorMessage = 'Erro ao solicitar redefinição de senha';
+      
+      if (error.message) {
+        if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Este e-mail não foi confirmado ainda. Verifique sua caixa de entrada.';
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'E-mail não encontrado.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const registerNotifications = async (token: string) => {
     try {
       if (!user) throw new Error('Usuário não autenticado');
       
-      // Atualizar para usar apenas os campos que existem na tabela profiles
       const { error } = await supabase
         .from('profiles')
         .update({
-          // Como notification_token não está definido no tipo de dados do Supabase,
-          // precisamos remover essa atualização por enquanto
-          // Adicione isso quando a coluna for criada no banco de dados
         })
         .eq('id', user.id);
       
@@ -160,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signUp, 
       signIn, 
       signOut,
+      resetPassword,
       registerNotifications
     }}>
       {children}
