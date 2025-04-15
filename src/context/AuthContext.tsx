@@ -156,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user) throw new Error('Usuário não autenticado');
       
+      // Update the profiles table with the notification token
       const { error } = await supabase
         .from('profiles')
         .update({

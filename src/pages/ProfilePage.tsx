@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { useProfileData, UserProfile } from '@/hooks/useProfileData';
+import { useProfileData } from '@/hooks/useProfileData';
+import { UserProfile } from '@/types/userProfile';
 import AchievementsList from '@/components/AchievementsList';
 import StreakDisplay from '@/components/StreakDisplay';
 import ProfileHeader from '@/components/ProfileHeader';

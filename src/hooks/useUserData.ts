@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { UserProfile } from './useProfileData';
+import { UserProfile } from '@/types/userProfile';
 
 // Tipos para o ranking de amigos
 export type FriendRank = {
