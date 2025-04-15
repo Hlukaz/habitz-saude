@@ -24,7 +24,7 @@ export const fetchProfiles = async (): Promise<UserProfile[]> => {
     nutrition_points: profile.nutrition_points || 0,
     total_points: profile.total_points || 0,
     streak: profile.streak || 0,
-    streak_blocks: profile.streak_blocks || 2, // Default to 2 streak blocks
+    streak_blocks: profile.streak_blocks || 2,
     last_activity_date: profile.last_activity_date,
     last_streak_update: profile.last_streak_update,
     last_block_reset: profile.last_block_reset,

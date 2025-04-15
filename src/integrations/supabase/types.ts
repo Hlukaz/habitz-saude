@@ -44,9 +44,12 @@ export type Database = {
           full_name: string | null
           id: string
           last_activity_date: string | null
+          last_block_reset: string | null
           last_streak_update: string | null
+          notification_token: string | null
           nutrition_points: number | null
           streak: number | null
+          streak_blocks: number | null
           total_points: number | null
           updated_at: string | null
           username: string | null
@@ -58,9 +61,12 @@ export type Database = {
           full_name?: string | null
           id: string
           last_activity_date?: string | null
+          last_block_reset?: string | null
           last_streak_update?: string | null
+          notification_token?: string | null
           nutrition_points?: number | null
           streak?: number | null
+          streak_blocks?: number | null
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
@@ -72,9 +78,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_activity_date?: string | null
+          last_block_reset?: string | null
           last_streak_update?: string | null
+          notification_token?: string | null
           nutrition_points?: number | null
           streak?: number | null
+          streak_blocks?: number | null
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
