@@ -75,7 +75,7 @@ const StreakDisplay = ({
         </div>
       </div>
       
-      {/* Contador Semanal - Reduzido em tamanho */}
+      {/* Contador Semanal - Versão com tamanho reduzido */}
       <div className="grid grid-cols-7 gap-1 mb-4">
         {displayWeeklyActivity.map((day, index) => (
           <div 
@@ -102,14 +102,14 @@ const StreakDisplay = ({
               </>
             )}
             
-            {/* Indicadores de pontos - versão menor */}
+            {/* Indicadores de pontos - versão ainda menor */}
             <div className="flex mt-0.5 space-x-0.5">
               <div className={cn(
-                "w-1.5 h-1.5 rounded-full", 
+                "w-1 h-1 rounded-full", 
                 day.activityPoint ? "bg-levelup-primary" : "bg-gray-300"
               )} />
               <div className={cn(
-                "w-1.5 h-1.5 rounded-full", 
+                "w-1 h-1 rounded-full", 
                 day.nutritionPoint ? "bg-levelup-secondary" : "bg-gray-300"
               )} />
             </div>
