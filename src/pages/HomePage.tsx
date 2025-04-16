@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { toast } from 'sonner';
 import PointsDisplay from '@/components/PointsDisplay';
@@ -8,6 +9,7 @@ import HomeHeader from '@/components/HomeHeader';
 import CheckInSection from '@/components/CheckInSection';
 import { useUserData } from '@/hooks/useUserData';
 import { formatCurrentWeek } from '@/utils/dateUtils';
+
 const HomePage = () => {
   const {
     user
@@ -19,15 +21,21 @@ const HomePage = () => {
     friendRanking,
     rankingLoading,
     rankingError,
+    weeklyActivity,
+    weeklyActivityLoading,
+    weeklyActivityError,
     checkInType,
     setCheckInType,
     handleCheckInSubmit
   } = useUserData(user?.id);
+  
   const currentWeek = formatCurrentWeek();
-  if (profileLoading) {
+  
+  if (profileLoading || weeklyActivityLoading) {
     return <div className="p-4 text-center">Carregando...</div>;
   }
-  if (profileError) {
+  
+  if (profileError || weeklyActivityError) {
     return <div className="p-4 text-center">
         <p className="text-red-500">Erro ao carregar dados do perfil</p>
         <button onClick={() => window.location.reload()} className="mt-2 text-levelup-primary">
@@ -52,6 +60,7 @@ const HomePage = () => {
     last_block_reset: null,
     notification_token: null
   };
+  
   return <div className="pb-20">
       {/* Header */}
       <HomeHeader currentWeek={currentWeek} />
@@ -63,7 +72,12 @@ const HomePage = () => {
       
       {/* Streak Display */}
       <div className="px-4 mb-5">
-        <StreakDisplay streak={userData.streak || 0} lastActivityDate={userData.last_activity_date} streakBlocks={userData.streak_blocks || 2} lastBlockReset={userData.last_block_reset} />
+        <StreakDisplay 
+          streak={userData.streak || 0} 
+          lastActivityDate={userData.last_activity_date} 
+          streakBlocks={userData.streak_blocks || 2} 
+          lastBlockReset={userData.last_block_reset} 
+        />
       </div>
       
       {/* Aplicativo Intro */}
@@ -80,4 +94,5 @@ const HomePage = () => {
       </div>
     </div>;
 };
+
 export default HomePage;

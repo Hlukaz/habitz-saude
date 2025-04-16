@@ -44,6 +44,18 @@ const StreakDisplay = ({
   const active = isStreakActive();
   const daysToRecover = getDaysUntilBlockRecovery();
   
+  // Mock de dados da semana para demonstração
+  // Em uma implementação real, esses dados viriam do backend
+  const weeklyActivity = [
+    { day: 'D', completed: true, activityPoint: true, nutritionPoint: true },
+    { day: 'S', completed: true, activityPoint: true, nutritionPoint: true },
+    { day: 'T', completed: true, activityPoint: true, nutritionPoint: false },
+    { day: 'Q', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'Q', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'S', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'S', completed: false, activityPoint: false, nutritionPoint: false },
+  ];
+  
   return <div className={cn("p-4 rounded-xl bg-card text-card-foreground", className)}>
       <div className="flex items-center mb-3">
         <div className={cn("w-10 h-10 rounded-full flex items-center justify-center mr-3 relative", active ? "bg-levelup-accent" : "bg-muted")}>
@@ -61,10 +73,44 @@ const StreakDisplay = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-3 gap-2 mb-2">
-        {[1, 2, 3].map(day => (
-          <div key={day} className="bg-muted/50 p-2 rounded-lg text-center text-sm">
-            Dia {day}
+      {/* Contador Semanal */}
+      <div className="grid grid-cols-7 gap-1 mb-4">
+        {weeklyActivity.map((day, index) => (
+          <div 
+            key={index} 
+            className={cn(
+              "relative flex flex-col items-center justify-center p-2 rounded-full aspect-square transition-all duration-300",
+              day.completed ? "bg-levelup-accent" : "bg-muted/50"
+            )}
+          >
+            <span className={cn(
+              "text-sm font-bold",
+              day.completed ? "text-white" : "text-muted-foreground"
+            )}>
+              {day.day}
+            </span>
+            
+            {/* Efeito de fogo para dias completos */}
+            {day.completed && (
+              <>
+                <div className="absolute -inset-1 rounded-full bg-levelup-accent/20 animate-[ping_3s_ease-in-out_infinite]" />
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 overflow-hidden">
+                  <div className="w-full h-full bg-orange-500 animate-[pulse_2s_ease-in-out_infinite] rounded-b-full opacity-70" />
+                </div>
+              </>
+            )}
+            
+            {/* Indicadores de pontos */}
+            <div className="flex mt-1 space-x-1">
+              <div className={cn(
+                "w-2 h-2 rounded-full", 
+                day.activityPoint ? "bg-levelup-primary" : "bg-gray-300"
+              )} />
+              <div className={cn(
+                "w-2 h-2 rounded-full", 
+                day.nutritionPoint ? "bg-levelup-secondary" : "bg-gray-300"
+              )} />
+            </div>
           </div>
         ))}
       </div>

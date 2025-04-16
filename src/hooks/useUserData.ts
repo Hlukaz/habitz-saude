@@ -14,6 +14,15 @@ export type FriendRank = {
   avatarUrl: string;
 };
 
+// Tipo para os dados de atividade semanal
+export type WeeklyActivityDay = {
+  day: string;
+  date: string;
+  completed: boolean;
+  activityPoint: boolean;
+  nutritionPoint: boolean;
+};
+
 // Buscar perfil do usuário
 export const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
   const { data, error } = await supabase
@@ -83,6 +92,47 @@ export const fetchFriendRanking = async (userId: string): Promise<FriendRank[]> 
     positionChange: 'down',
     avatarUrl: 'https://source.unsplash.com/random/100x100/?man,2'
   }];
+};
+
+// Buscar dados de atividade da semana atual
+export const fetchWeeklyActivity = async (userId: string): Promise<WeeklyActivityDay[]> => {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Domingo, 1 = Segunda, ...
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - currentDay); // Define para o domingo da semana atual
+  
+  const dayAbbreviations = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  
+  // Criar array com os 7 dias da semana
+  const weeklyActivity: WeeklyActivityDay[] = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + i);
+    
+    // Determinar se este dia já passou
+    const isPastDay = date <= today;
+    
+    // Simulação: dias passados têm 70% de chance de terem sido completados
+    const completed = isPastDay && Math.random() < 0.7;
+    
+    // Simulação: se completado, 80% de chance de ter os dois pontos
+    const hasBothPoints = completed && Math.random() < 0.8;
+    
+    // Simulação: se não tem os dois pontos mas completou, 50% de chance de ter cada ponto
+    const hasActivityPoint = hasBothPoints || (completed && Math.random() < 0.5);
+    const hasNutritionPoint = hasBothPoints || (completed && Math.random() < 0.5);
+    
+    weeklyActivity.push({
+      day: dayAbbreviations[i],
+      date: date.toISOString().split('T')[0], // Formato YYYY-MM-DD
+      completed: hasActivityPoint && hasNutritionPoint, // Consideramos completo se tem os dois pontos
+      activityPoint: hasActivityPoint,
+      nutritionPoint: hasNutritionPoint
+    });
+  }
+  
+  return weeklyActivity;
 };
 
 // Atualizar pontos do usuário
@@ -166,6 +216,16 @@ export const useUserData = (userId: string | undefined) => {
     queryFn: () => userId ? fetchFriendRanking(userId) : Promise.reject('Usuário não autenticado'),
     enabled: !!userId
   });
+  
+  const {
+    data: weeklyActivity,
+    isLoading: weeklyActivityLoading,
+    error: weeklyActivityError
+  } = useQuery({
+    queryKey: ['weeklyActivity', userId],
+    queryFn: () => userId ? fetchWeeklyActivity(userId) : Promise.reject('Usuário não autenticado'),
+    enabled: !!userId
+  });
 
   const updatePointsMutation = useMutation({
     mutationFn: async (type: 'activity' | 'nutrition') => {
@@ -182,6 +242,7 @@ export const useUserData = (userId: string | undefined) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
+      queryClient.invalidateQueries({ queryKey: ['weeklyActivity', userId] });
       toast.success('Check-in realizado com sucesso!');
     },
     onError: (error: any) => {
@@ -204,6 +265,9 @@ export const useUserData = (userId: string | undefined) => {
     friendRanking,
     rankingLoading,
     rankingError,
+    weeklyActivity,
+    weeklyActivityLoading,
+    weeklyActivityError,
     checkInType,
     setCheckInType,
     handleCheckInSubmit,
