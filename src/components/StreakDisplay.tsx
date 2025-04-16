@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Flame, Calendar, Trophy, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+
 interface StreakDisplayProps {
   streak: number;
   lastActivityDate: string | null;
@@ -9,6 +11,7 @@ interface StreakDisplayProps {
   lastBlockReset: string | null;
   className?: string;
 }
+
 const StreakDisplay = ({
   streak,
   lastActivityDate,
@@ -37,8 +40,10 @@ const StreakDisplay = ({
     const diffTime = Math.max(0, recoveryDate.getTime() - today.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
+  
   const active = isStreakActive();
   const daysToRecover = getDaysUntilBlockRecovery();
+  
   return <div className={cn("p-4 rounded-xl bg-card text-card-foreground", className)}>
       <div className="flex items-center mb-3">
         <div className={cn("w-10 h-10 rounded-full flex items-center justify-center mr-3 relative", active ? "bg-levelup-accent" : "bg-muted")}>
@@ -57,7 +62,11 @@ const StreakDisplay = ({
       </div>
       
       <div className="grid grid-cols-3 gap-2 mb-2">
-        {[1, 2, 3].map(day => {})}
+        {[1, 2, 3].map(day => (
+          <div key={day} className="bg-muted/50 p-2 rounded-lg text-center text-sm">
+            Dia {day}
+          </div>
+        ))}
       </div>
       
       {streakBlocks < 2 && daysToRecover > 0 && <div className="mt-2 text-xs text-muted-foreground text-center">
@@ -76,4 +85,5 @@ const StreakDisplay = ({
         </div>}
     </div>;
 };
+
 export default StreakDisplay;
