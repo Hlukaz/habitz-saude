@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -117,7 +116,13 @@ export const fetchUserCheckIns = async (userId: string): Promise<CheckInRecord[]
     return [];
   }
 
-  return data || [];
+  return (data || []).map(item => ({
+    id: item.id,
+    user_id: item.user_id,
+    type: item.type as 'activity' | 'nutrition',
+    created_at: item.created_at,
+    image_url: item.image_url
+  }));
 };
 
 // Buscar dados de atividade da semana atual com base nos check-ins reais
