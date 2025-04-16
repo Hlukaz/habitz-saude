@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trophy, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Progress } from '@/components/ui/progress';
 
 interface AchievementsDialogProps {
@@ -28,7 +27,6 @@ interface AchievementsDialogProps {
   className?: string;
 }
 
-// Lista de todas as conquistas possíveis (adicione mais conforme necessário)
 const allAchievements: Achievement[] = [
   {
     id: "1",
@@ -81,7 +79,6 @@ const allAchievements: Achievement[] = [
 ];
 
 const getIconComponent = (iconName: string) => {
-  // Podemos adicionar mais ícones conforme necessário
   switch (iconName) {
     case 'trophy': return Trophy;
     case 'award': return Trophy;
@@ -90,7 +87,6 @@ const getIconComponent = (iconName: string) => {
   }
 };
 
-// Componente para exibir uma única conquista
 const AchievementItem = ({ achievement, totalPoints }: { achievement: Achievement; totalPoints: number }) => {
   const IconComponent = getIconComponent(achievement.icon);
   const isUnlocked = achievement.unlocked;
@@ -133,9 +129,7 @@ const AchievementItem = ({ achievement, totalPoints }: { achievement: Achievemen
   );
 };
 
-// Componente mobile (drawer)
 const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogProps) => {
-  // Combinar conquistas existentes com todas as possíveis
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
     ...achievements,
@@ -177,9 +171,7 @@ const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogPro
   );
 };
 
-// Componente desktop (dialog)
 const AchievementsModalDialog = ({ achievements, totalPoints }: AchievementsDialogProps) => {
-  // Combinar conquistas existentes com todas as possíveis
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
     ...achievements,
@@ -221,9 +213,8 @@ const AchievementsModalDialog = ({ achievements, totalPoints }: AchievementsDial
   );
 };
 
-// Componente principal que escolhe entre desktop ou mobile
 const AchievementsDialog = (props: AchievementsDialogProps) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   return (
     <div className={props.className}>
