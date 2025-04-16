@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +22,15 @@ export type WeeklyActivityDay = {
   completed: boolean;
   activityPoint: boolean;
   nutritionPoint: boolean;
+};
+
+// Tipo para registro de check-in
+export type CheckInRecord = {
+  id: string;
+  user_id: string;
+  type: 'activity' | 'nutrition';
+  created_at: string;
+  image_url?: string | null;
 };
 
 // Buscar perfil do usuário
@@ -94,7 +104,23 @@ export const fetchFriendRanking = async (userId: string): Promise<FriendRank[]> 
   }];
 };
 
-// Buscar dados de atividade da semana atual
+// Buscar registros de check-in do usuário
+export const fetchUserCheckIns = async (userId: string): Promise<CheckInRecord[]> => {
+  const { data, error } = await supabase
+    .from('user_checkins')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar check-ins:", error);
+    return [];
+  }
+
+  return data || [];
+};
+
+// Buscar dados de atividade da semana atual com base nos check-ins reais
 export const fetchWeeklyActivity = async (userId: string): Promise<WeeklyActivityDay[]> => {
   const today = new Date();
   const currentDay = today.getDay(); // 0 = Domingo, 1 = Segunda, ...
@@ -103,44 +129,108 @@ export const fetchWeeklyActivity = async (userId: string): Promise<WeeklyActivit
   
   const dayAbbreviations = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   
-  // Criar array com os 7 dias da semana
+  // Buscar check-ins do usuário na semana atual
+  const startDate = weekStart.toISOString().split('T')[0];
+  const endDate = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Adiciona 1 dia para incluir hoje
+  
+  const { data: checkIns, error } = await supabase
+    .from('user_checkins')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('created_at', startDate)
+    .lt('created_at', endDate);
+  
+  if (error) {
+    console.error("Erro ao buscar check-ins da semana:", error);
+    return createDefaultWeeklyActivity(dayAbbreviations, weekStart);
+  }
+  
+  // Agrupar check-ins por data
+  const checkInsByDate: Record<string, { activity: boolean, nutrition: boolean }> = {};
+  
+  checkIns?.forEach(checkIn => {
+    const date = new Date(checkIn.created_at).toISOString().split('T')[0];
+    
+    if (!checkInsByDate[date]) {
+      checkInsByDate[date] = { activity: false, nutrition: false };
+    }
+    
+    if (checkIn.type === 'activity') {
+      checkInsByDate[date].activity = true;
+    } else if (checkIn.type === 'nutrition') {
+      checkInsByDate[date].nutrition = true;
+    }
+  });
+  
+  // Criar array com os 7 dias da semana com os dados de check-in
   const weeklyActivity: WeeklyActivityDay[] = [];
   
   for (let i = 0; i < 7; i++) {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + i);
+    const dateString = date.toISOString().split('T')[0];
     
-    // Determinar se este dia já passou
-    const isPastDay = date <= today;
+    const checkInsForDay = checkInsByDate[dateString] || { activity: false, nutrition: false };
     
-    // Simulação: dias passados têm 70% de chance de terem sido completados
-    const completed = isPastDay && Math.random() < 0.7;
-    
-    // Simulação: se completado, 80% de chance de ter os dois pontos
-    const hasBothPoints = completed && Math.random() < 0.8;
-    
-    // Simulação: se não tem os dois pontos mas completou, 50% de chance de ter cada ponto
-    const hasActivityPoint = hasBothPoints || (completed && Math.random() < 0.5);
-    const hasNutritionPoint = hasBothPoints || (completed && Math.random() < 0.5);
+    // Um dia é considerado completo apenas se tem os dois tipos de check-in
+    const isCompleted = checkInsForDay.activity && checkInsForDay.nutrition;
     
     weeklyActivity.push({
       day: dayAbbreviations[i],
-      date: date.toISOString().split('T')[0], // Formato YYYY-MM-DD
-      completed: hasActivityPoint && hasNutritionPoint, // Consideramos completo se tem os dois pontos
-      activityPoint: hasActivityPoint,
-      nutritionPoint: hasNutritionPoint
+      date: dateString,
+      completed: isCompleted, // Só marcamos como completo se tiver os dois check-ins
+      activityPoint: checkInsForDay.activity,
+      nutritionPoint: checkInsForDay.nutrition
     });
   }
   
   return weeklyActivity;
 };
 
-// Atualizar pontos do usuário
+// Função auxiliar para criar dados padrão da semana quando não há dados
+const createDefaultWeeklyActivity = (
+  dayAbbreviations: string[], 
+  weekStart: Date
+): WeeklyActivityDay[] => {
+  const weeklyActivity: WeeklyActivityDay[] = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + i);
+    
+    weeklyActivity.push({
+      day: dayAbbreviations[i],
+      date: date.toISOString().split('T')[0],
+      completed: false,
+      activityPoint: false,
+      nutritionPoint: false
+    });
+  }
+  
+  return weeklyActivity;
+};
+
+// Atualizar pontos do usuário e registrar check-in
 export const updateUserPoints = async (
   userId: string, 
   type: 'activity' | 'nutrition', 
-  currentProfile: UserProfile
+  currentProfile: UserProfile,
+  imageUrl?: string
 ): Promise<UserProfile> => {
+  // Primeiro registramos o check-in
+  const { error: checkInError } = await supabase
+    .from('user_checkins')
+    .insert({
+      user_id: userId,
+      type: type,
+      image_url: imageUrl || null
+    });
+
+  if (checkInError) {
+    throw checkInError;
+  }
+
+  // Depois atualizamos os pontos do usuário
   const newActivityPoints = type === 'activity' 
     ? currentProfile.activity_points + 1 
     : currentProfile.activity_points;
@@ -156,7 +246,8 @@ export const updateUserPoints = async (
     .update({ 
       activity_points: newActivityPoints,
       nutrition_points: newNutritionPoints,
-      total_points: newTotalPoints
+      total_points: newTotalPoints,
+      last_activity_date: new Date().toISOString().split('T')[0]
     })
     .eq('id', userId)
     .select()
@@ -190,7 +281,22 @@ export const checkIfCheckedInToday = async (
   userId: string,
   type: 'activity' | 'nutrition'
 ): Promise<boolean> => {
-  return false;
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { data, error } = await supabase
+    .from('user_checkins')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .gte('created_at', today)
+    .lt('created_at', new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]);
+  
+  if (error) {
+    console.error("Erro ao verificar check-in:", error);
+    return false;
+  }
+  
+  return (data && data.length > 0);
 };
 
 export const useUserData = (userId: string | undefined) => {
@@ -224,11 +330,12 @@ export const useUserData = (userId: string | undefined) => {
   } = useQuery({
     queryKey: ['weeklyActivity', userId],
     queryFn: () => userId ? fetchWeeklyActivity(userId) : Promise.reject('Usuário não autenticado'),
-    enabled: !!userId
+    enabled: !!userId,
+    refetchInterval: 1000 * 60 * 5, // Atualiza a cada 5 minutos
   });
 
   const updatePointsMutation = useMutation({
-    mutationFn: async (type: 'activity' | 'nutrition') => {
+    mutationFn: async ({ type, imageUrl }: { type: 'activity' | 'nutrition', imageUrl?: string }) => {
       if (!userId || !userProfile) {
         throw new Error('Usuário não autenticado ou perfil não carregado');
       }
@@ -238,11 +345,12 @@ export const useUserData = (userId: string | undefined) => {
         throw new Error(`Você já fez check-in de ${type === 'activity' ? 'atividade' : 'alimentação'} hoje`);
       }
       
-      return updateUserPoints(userId, type, userProfile);
+      return updateUserPoints(userId, type, userProfile, imageUrl);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
       queryClient.invalidateQueries({ queryKey: ['weeklyActivity', userId] });
+      queryClient.invalidateQueries({ queryKey: ['userCheckIns', userId] });
       toast.success('Check-in realizado com sucesso!');
     },
     onError: (error: any) => {
@@ -254,7 +362,8 @@ export const useUserData = (userId: string | undefined) => {
   const handleCheckInSubmit = (images: string[]) => {
     if (!checkInType) return;
     
-    updatePointsMutation.mutate(checkInType);
+    const imageUrl = images.length > 0 ? images[0] : undefined;
+    updatePointsMutation.mutate({ type: checkInType, imageUrl });
     setCheckInType(null);
   };
 

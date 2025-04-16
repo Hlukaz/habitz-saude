@@ -3,12 +3,14 @@ import React from 'react';
 import { Flame, Calendar, Trophy, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { WeeklyActivityDay } from '@/hooks/useUserData';
 
 interface StreakDisplayProps {
   streak: number;
   lastActivityDate: string | null;
   streakBlocks: number;
   lastBlockReset: string | null;
+  weeklyActivity?: WeeklyActivityDay[];
   className?: string;
 }
 
@@ -17,6 +19,7 @@ const StreakDisplay = ({
   lastActivityDate,
   streakBlocks = 2,
   lastBlockReset,
+  weeklyActivity,
   className
 }: StreakDisplayProps) => {
   // Verificar se o streak está ativo (atividade registrada nos últimos 2 dias)
@@ -44,16 +47,15 @@ const StreakDisplay = ({
   const active = isStreakActive();
   const daysToRecover = getDaysUntilBlockRecovery();
   
-  // Mock de dados da semana para demonstração
-  // Em uma implementação real, esses dados viriam do backend
-  const weeklyActivity = [
-    { day: 'D', completed: true, activityPoint: true, nutritionPoint: true },
-    { day: 'S', completed: true, activityPoint: true, nutritionPoint: true },
-    { day: 'T', completed: true, activityPoint: true, nutritionPoint: false },
-    { day: 'Q', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'Q', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'S', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'S', completed: false, activityPoint: false, nutritionPoint: false },
+  // Use weeklyActivity from props if provided, otherwise use mock data
+  const displayWeeklyActivity = weeklyActivity || [
+    { day: 'D', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'T', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'Q', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'Q', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
+    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
   ];
   
   return <div className={cn("p-4 rounded-xl bg-card text-card-foreground", className)}>
@@ -73,24 +75,24 @@ const StreakDisplay = ({
         </div>
       </div>
       
-      {/* Contador Semanal */}
+      {/* Contador Semanal - Reduzido em tamanho */}
       <div className="grid grid-cols-7 gap-1 mb-4">
-        {weeklyActivity.map((day, index) => (
+        {displayWeeklyActivity.map((day, index) => (
           <div 
             key={index} 
             className={cn(
-              "relative flex flex-col items-center justify-center p-2 rounded-full aspect-square transition-all duration-300",
+              "relative flex flex-col items-center justify-center p-1 rounded-full aspect-square transition-all duration-300",
               day.completed ? "bg-levelup-accent" : "bg-muted/50"
             )}
           >
             <span className={cn(
-              "text-sm font-bold",
+              "text-xs font-bold",
               day.completed ? "text-white" : "text-muted-foreground"
             )}>
               {day.day}
             </span>
             
-            {/* Efeito de fogo para dias completos */}
+            {/* Efeito de fogo para dias completos (quando tem os dois pontos) */}
             {day.completed && (
               <>
                 <div className="absolute -inset-1 rounded-full bg-levelup-accent/20 animate-[ping_3s_ease-in-out_infinite]" />
@@ -100,14 +102,14 @@ const StreakDisplay = ({
               </>
             )}
             
-            {/* Indicadores de pontos */}
-            <div className="flex mt-1 space-x-1">
+            {/* Indicadores de pontos - versão menor */}
+            <div className="flex mt-0.5 space-x-0.5">
               <div className={cn(
-                "w-2 h-2 rounded-full", 
+                "w-1.5 h-1.5 rounded-full", 
                 day.activityPoint ? "bg-levelup-primary" : "bg-gray-300"
               )} />
               <div className={cn(
-                "w-2 h-2 rounded-full", 
+                "w-1.5 h-1.5 rounded-full", 
                 day.nutritionPoint ? "bg-levelup-secondary" : "bg-gray-300"
               )} />
             </div>

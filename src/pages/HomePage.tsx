@@ -70,13 +70,14 @@ const HomePage = () => {
         <PointsDisplay activityPoints={userData.activity_points} nutritionPoints={userData.nutrition_points} totalPoints={userData.total_points} />
       </div>
       
-      {/* Streak Display */}
+      {/* Streak Display - agora com dados reais */}
       <div className="px-4 mb-5">
         <StreakDisplay 
           streak={userData.streak || 0} 
           lastActivityDate={userData.last_activity_date} 
           streakBlocks={userData.streak_blocks || 2} 
-          lastBlockReset={userData.last_block_reset} 
+          lastBlockReset={userData.last_block_reset}
+          weeklyActivity={weeklyActivity}
         />
       </div>
       
