@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Flame, Calendar, Trophy, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { WeeklyActivityDay } from '@/hooks/useUserData';
-
 interface StreakDisplayProps {
   streak: number;
   lastActivityDate: string | null;
@@ -13,7 +11,6 @@ interface StreakDisplayProps {
   weeklyActivity?: WeeklyActivityDay[];
   className?: string;
 }
-
 const StreakDisplay = ({
   streak,
   lastActivityDate,
@@ -43,7 +40,6 @@ const StreakDisplay = ({
     const diffTime = Math.max(0, recoveryDate.getTime() - today.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
-  
   const active = isStreakActive();
   const daysToRecover = getDaysUntilBlockRecovery();
 
@@ -91,17 +87,10 @@ const StreakDisplay = ({
     activityPoint: false,
     nutritionPoint: false
   }];
-  
-  return (
-    <div className={cn("bg-card rounded-xl p-4", className)}>
+  return <div className={cn("bg-card rounded-xl p-4", className)}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center">
-          <Flame 
-            className={cn(
-              "w-5 h-5 mr-2", 
-              active ? "text-levelup-primary" : "text-muted-foreground"
-            )} 
-          />
+          <Flame className={cn("w-5 h-5 mr-2", active ? "text-levelup-primary" : "text-muted-foreground")} />
           <h3 className="font-semibold text-lg">Sequência</h3>
         </div>
         <div className="flex items-center">
@@ -115,30 +104,19 @@ const StreakDisplay = ({
       {/* Sequência semanal */}
       <div className="mt-3">
         <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
-          <span>Essa semana</span>
-          <span className="text-xs">Atividade + Alimentação</span>
+          
+          
         </div>
         <div className="flex justify-between gap-1 mt-1">
-          {displayWeeklyActivity.map((day, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div className={cn(
-                "w-10 h-10 rounded-full border-2 flex items-center justify-center mb-1",
-                day.completed 
-                  ? "bg-levelup-primary border-levelup-primary text-white" 
-                  : "border-muted-foreground text-muted-foreground"
-              )}>
-                {day.completed ? (
-                  <Trophy className="w-5 h-5" />
-                ) : (
-                  <div className="flex">
+          {displayWeeklyActivity.map((day, index) => <div key={index} className="flex flex-col items-center">
+              <div className={cn("w-10 h-10 rounded-full border-2 flex items-center justify-center mb-1", day.completed ? "bg-levelup-primary border-levelup-primary text-white" : "border-muted-foreground text-muted-foreground")}>
+                {day.completed ? <Trophy className="w-5 h-5" /> : <div className="flex">
                     {day.activityPoint && <div className="w-2 h-2 bg-levelup-primary rounded-full mr-0.5" />}
                     {day.nutritionPoint && <div className="w-2 h-2 bg-levelup-primary rounded-full" />}
-                  </div>
-                )}
+                  </div>}
               </div>
               <span className="text-xs">{day.day}</span>
-            </div>
-          ))}
+            </div>)}
         </div>
       </div>
       
@@ -151,15 +129,11 @@ const StreakDisplay = ({
           </div>
           <span className="text-sm font-semibold">{streakBlocks}/2</span>
         </div>
-        <Progress value={(streakBlocks / 2) * 100} className="h-2" />
-        {streakBlocks < 2 && daysToRecover > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
+        <Progress value={streakBlocks / 2 * 100} className="h-2" />
+        {streakBlocks < 2 && daysToRecover > 0 && <p className="text-xs text-muted-foreground mt-1">
             Recupera em {daysToRecover} dias
-          </p>
-        )}
+          </p>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default StreakDisplay;
