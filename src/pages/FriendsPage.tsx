@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Search, UserPlus, Check, X, Share2, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,46 +18,95 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+// Type definitions for friend requests and friends
+interface FriendRequest {
+  id: string;
+  name: string;
+  userId: string;
+  avatarUrl: string | null;
+}
+
+interface Friend {
+  id: string;
+  userId: string;
+  name: string;
+  totalPoints: number;
+  weeklyPoints: number;
+  avatarUrl: string | null;
+}
+
 // Function to fetch friend requests
-const fetchFriendRequests = async (userId: string) => {
+const fetchFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
   const { data, error } = await supabase
     .from('friend_requests')
     .select(`
       id,
-      sender:sender_id(id, username, full_name, avatar_url)
+      sender_id,
+      receiver_id
     `)
     .eq('receiver_id', userId)
     .eq('status', 'pending');
     
   if (error) throw error;
-  return data.map(item => ({
-    id: item.id,
-    name: item.sender.full_name || item.sender.username,
-    userId: item.sender.id,
-    avatarUrl: item.sender.avatar_url
-  }));
+  
+  // Now fetch the sender details for each request
+  const requests: FriendRequest[] = [];
+  
+  for (const request of data) {
+    const { data: senderData, error: senderError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .eq('id', request.sender_id)
+      .single();
+      
+    if (senderError) continue;
+    
+    requests.push({
+      id: request.id,
+      name: senderData.full_name || senderData.username,
+      userId: senderData.id,
+      avatarUrl: senderData.avatar_url
+    });
+  }
+  
+  return requests;
 };
 
 // Function to fetch friends
-const fetchFriends = async (userId: string) => {
+const fetchFriends = async (userId: string): Promise<Friend[]> => {
   const { data, error } = await supabase
     .from('friendships')
     .select(`
       id,
-      friend:friend_id(id, username, full_name, avatar_url, total_points, activity_points, nutrition_points)
+      friend_id
     `)
     .eq('user_id', userId);
     
   if (error) throw error;
   
-  return data.map(item => ({
-    id: item.id,
-    userId: item.friend.id,
-    name: item.friend.full_name || item.friend.username,
-    totalPoints: item.friend.total_points || 0,
-    weeklyPoints: (item.friend.activity_points || 0) + (item.friend.nutrition_points || 0),
-    avatarUrl: item.friend.avatar_url
-  }));
+  // Now fetch the friend details for each friendship
+  const friends: Friend[] = [];
+  
+  for (const friendship of data) {
+    const { data: friendData, error: friendError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, total_points, activity_points, nutrition_points')
+      .eq('id', friendship.friend_id)
+      .single();
+      
+    if (friendError) continue;
+    
+    friends.push({
+      id: friendship.id,
+      userId: friendData.id,
+      name: friendData.full_name || friendData.username,
+      totalPoints: friendData.total_points || 0,
+      weeklyPoints: (friendData.activity_points || 0) + (friendData.nutrition_points || 0),
+      avatarUrl: friendData.avatar_url
+    });
+  }
+  
+  return friends;
 };
 
 const FriendsPage = () => {
@@ -82,19 +130,15 @@ const FriendsPage = () => {
   // Accept friend request mutation
   const acceptRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const { error } = await supabase
+      // First, update the request status to 'accepted'
+      const { data: requestData, error: requestUpdateError } = await supabase
         .from('friend_requests')
         .update({ status: 'accepted' })
-        .eq('id', requestId);
-      
-      if (error) throw error;
-      
-      // Get the request details to create the friendship
-      const { data: requestData } = await supabase
-        .from('friend_requests')
-        .select('sender_id, receiver_id')
         .eq('id', requestId)
+        .select('sender_id, receiver_id')
         .single();
+      
+      if (requestUpdateError) throw requestUpdateError;
       
       if (!requestData) throw new Error('Request not found');
       
@@ -148,7 +192,7 @@ const FriendsPage = () => {
   // Remove friend mutation
   const removeFriendMutation = useMutation({
     mutationFn: async (params: { friendshipId: string, friendId: string }) => {
-      // Delete both friendship entries
+      // Delete the friendship entry
       const { error: error1 } = await supabase
         .from('friendships')
         .delete()
@@ -156,13 +200,22 @@ const FriendsPage = () => {
       
       if (error1) throw error1;
       
-      const { error: error2 } = await supabase
+      // Find and delete the reverse friendship entry
+      const { data: reverseFriendship, error: findError } = await supabase
         .from('friendships')
-        .delete()
+        .select('id')
         .eq('user_id', params.friendId)
-        .eq('friend_id', user?.id);
+        .eq('friend_id', user?.id)
+        .single();
       
-      if (error2) throw error2;
+      if (!findError && reverseFriendship) {
+        const { error: error2 } = await supabase
+          .from('friendships')
+          .delete()
+          .eq('id', reverseFriendship.id);
+        
+        if (error2) throw error2;
+      }
       
       return params.friendshipId;
     },
