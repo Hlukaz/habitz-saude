@@ -13,6 +13,7 @@ import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import InvitePage from "./pages/InvitePage";
 import { AuthProvider } from "./context/AuthContext";
 import RequireAuth from "./components/RequireAuth";
 
@@ -30,6 +31,7 @@ const App = () => {
             <AuthProvider>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/invite" element={<InvitePage />} />
                 <Route element={<RequireAuth />}>
                   <Route path="/" element={<MainLayout />}>
                     <Route index element={<HomePage />} />

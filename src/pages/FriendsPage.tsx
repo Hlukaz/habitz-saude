@@ -1,54 +1,205 @@
 
-import React from 'react';
-import { Search, UserPlus, Check, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, UserPlus, Check, X, Share2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Mock data for demonstration
-const mockFriendRequests = [
-  {
-    id: 'user-7',
-    name: 'Lucas Mendes',
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?man,3'
-  },
-  {
-    id: 'user-8',
-    name: 'Marina Santos',
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?woman,3'
-  }
-];
+// Function to fetch friend requests
+const fetchFriendRequests = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select(`
+      id,
+      sender:sender_id(id, username, full_name, avatar_url)
+    `)
+    .eq('receiver_id', userId)
+    .eq('status', 'pending');
+    
+  if (error) throw error;
+  return data.map(item => ({
+    id: item.id,
+    name: item.sender.full_name || item.sender.username,
+    userId: item.sender.id,
+    avatarUrl: item.sender.avatar_url
+  }));
+};
 
-const mockFriends = [
-  {
-    id: 'user-2',
-    name: 'Ana Silva',
-    totalPoints: 7,
-    weeklyPoints: 7,
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?woman'
-  },
-  {
-    id: 'user-3',
-    name: 'Carlos Gomes',
-    totalPoints: 126,
-    weeklyPoints: 4,
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?man'
-  },
-  {
-    id: 'user-4',
-    name: 'Patricia Lima',
-    totalPoints: 98,
-    weeklyPoints: 3,
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?woman,2'
-  },
-  {
-    id: 'user-5',
-    name: 'Marcelo Costa',
-    totalPoints: 113,
-    weeklyPoints: 2,
-    avatarUrl: 'https://source.unsplash.com/random/100x100/?man,2'
-  }
-];
+// Function to fetch friends
+const fetchFriends = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('friendships')
+    .select(`
+      id,
+      friend:friend_id(id, username, full_name, avatar_url, total_points, activity_points, nutrition_points)
+    `)
+    .eq('user_id', userId);
+    
+  if (error) throw error;
+  
+  return data.map(item => ({
+    id: item.id,
+    userId: item.friend.id,
+    name: item.friend.full_name || item.friend.username,
+    totalPoints: item.friend.total_points || 0,
+    weeklyPoints: (item.friend.activity_points || 0) + (item.friend.nutrition_points || 0),
+    avatarUrl: item.friend.avatar_url
+  }));
+};
 
 const FriendsPage = () => {
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
+  const [shareUrl, setShareUrl] = useState('');
+
+  const { data: friendRequests = [], isLoading: isLoadingRequests } = useQuery({
+    queryKey: ['friendRequests', user?.id],
+    queryFn: () => user?.id ? fetchFriendRequests(user.id) : Promise.resolve([]),
+    enabled: !!user?.id
+  });
+
+  const { data: friends = [], isLoading: isLoadingFriends } = useQuery({
+    queryKey: ['friends', user?.id],
+    queryFn: () => user?.id ? fetchFriends(user.id) : Promise.resolve([]),
+    enabled: !!user?.id
+  });
+
+  // Accept friend request mutation
+  const acceptRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      // Get the request details to create the friendship
+      const { data: requestData } = await supabase
+        .from('friend_requests')
+        .select('sender_id, receiver_id')
+        .eq('id', requestId)
+        .single();
+      
+      if (!requestData) throw new Error('Request not found');
+      
+      // Create friendship entries for both users
+      const { error: error1 } = await supabase
+        .from('friendships')
+        .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
+      
+      if (error1) throw error1;
+      
+      const { error: error2 } = await supabase
+        .from('friendships')
+        .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
+      
+      if (error2) throw error2;
+      
+      return requestId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['friendRequests', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
+      toast.success('Solicitação de amizade aceita!');
+    },
+    onError: (error) => {
+      console.error('Error accepting friend request:', error);
+      toast.error('Erro ao aceitar solicitação. Tente novamente.');
+    }
+  });
+
+  // Reject friend request mutation
+  const rejectRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: 'rejected' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      return requestId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['friendRequests', user?.id] });
+      toast.success('Solicitação rejeitada');
+    },
+    onError: (error) => {
+      console.error('Error rejecting friend request:', error);
+      toast.error('Erro ao rejeitar solicitação. Tente novamente.');
+    }
+  });
+
+  // Remove friend mutation
+  const removeFriendMutation = useMutation({
+    mutationFn: async (params: { friendshipId: string, friendId: string }) => {
+      // Delete both friendship entries
+      const { error: error1 } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', params.friendshipId);
+      
+      if (error1) throw error1;
+      
+      const { error: error2 } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('user_id', params.friendId)
+        .eq('friend_id', user?.id);
+      
+      if (error2) throw error2;
+      
+      return params.friendshipId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
+      toast.success('Amigo removido da lista');
+    },
+    onError: (error) => {
+      console.error('Error removing friend:', error);
+      toast.error('Erro ao remover amigo. Tente novamente.');
+    }
+  });
+
+  // Generate invite link
+  const generateInviteLink = () => {
+    if (!user?.id) return;
+    
+    const baseUrl = window.location.origin;
+    const inviteLink = `${baseUrl}/invite?id=${user.id}`;
+    setShareUrl(inviteLink);
+    return inviteLink;
+  };
+
+  // Share invite link via WhatsApp
+  const shareViaWhatsApp = () => {
+    const inviteLink = generateInviteLink();
+    if (!inviteLink) return;
+    
+    const whatsappUrl = `https://wa.me/?text=Olá! Estou te convidando para ser meu amigo no LevelUp. Clique no link para aceitar: ${encodeURIComponent(inviteLink)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Filter friends by search term
+  const filteredFriends = friends.filter(friend => 
+    friend.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="pb-20">
       {/* Header */}
@@ -59,20 +210,22 @@ const FriendsPage = () => {
           <input
             type="text"
             placeholder="Buscar amigos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-full border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
       </header>
       
       {/* Friend Requests */}
-      {mockFriendRequests.length > 0 && (
+      {friendRequests.length > 0 && (
         <div className="px-4 mb-5">
           <h2 className="text-lg font-bold mb-3">Solicitações de Amizade</h2>
           <div className="space-y-3">
-            {mockFriendRequests.map(request => (
+            {friendRequests.map(request => (
               <div key={request.id} className="bg-card p-3 rounded-lg shadow-sm flex items-center">
                 <img
-                  src={request.avatarUrl}
+                  src={request.avatarUrl || 'https://source.unsplash.com/random/100x100/?person'}
                   alt={request.name}
                   className="w-12 h-12 rounded-full object-cover"
                 />
@@ -81,10 +234,18 @@ const FriendsPage = () => {
                   <p className="text-sm text-muted-foreground">Quer ser seu amigo</p>
                 </div>
                 <div className="flex">
-                  <button className="w-10 h-10 rounded-full bg-levelup-success text-white flex items-center justify-center mr-2">
+                  <button 
+                    className="w-10 h-10 rounded-full bg-levelup-success text-white flex items-center justify-center mr-2"
+                    onClick={() => acceptRequestMutation.mutate(request.id)}
+                    disabled={acceptRequestMutation.isPending}
+                  >
                     <Check className="w-5 h-5" />
                   </button>
-                  <button className="w-10 h-10 rounded-full bg-levelup-danger text-white flex items-center justify-center">
+                  <button 
+                    className="w-10 h-10 rounded-full bg-levelup-danger text-white flex items-center justify-center"
+                    onClick={() => rejectRequestMutation.mutate(request.id)}
+                    disabled={rejectRequestMutation.isPending}
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -96,39 +257,82 @@ const FriendsPage = () => {
       
       {/* Add Friends */}
       <div className="px-4 mb-5">
-        <button className="w-full py-3 bg-levelup-secondary text-white rounded-lg flex items-center justify-center font-medium">
-          <UserPlus className="w-5 h-5 mr-2" />
-          Adicionar Novos Amigos
+        <button 
+          className="w-full py-3 bg-levelup-secondary text-white rounded-lg flex items-center justify-center font-medium mb-3"
+          onClick={shareViaWhatsApp}
+        >
+          <Share2 className="w-5 h-5 mr-2" />
+          Convidar Amigos via WhatsApp
         </button>
       </div>
       
       {/* Friends List */}
       <div className="px-4">
         <h2 className="text-lg font-bold mb-3">Seus Amigos</h2>
-        <div className="space-y-3">
-          {mockFriends.map(friend => (
-            <div 
-              key={friend.id}
-              className="bg-card p-3 rounded-lg shadow-sm flex items-center hover:shadow-md transition-shadow"
-            >
-              <img
-                src={friend.avatarUrl}
-                alt={friend.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div className="ml-3 flex-1">
-                <p className="font-medium">{friend.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {friend.totalPoints} pontos no total
-                </p>
+        {isLoadingFriends ? (
+          <div className="flex justify-center py-8">
+            <p>Carregando amigos...</p>
+          </div>
+        ) : filteredFriends.length > 0 ? (
+          <div className="space-y-3">
+            {filteredFriends.map(friend => (
+              <div 
+                key={friend.id}
+                className="bg-card p-3 rounded-lg shadow-sm flex items-center hover:shadow-md transition-shadow"
+              >
+                <img
+                  src={friend.avatarUrl || 'https://source.unsplash.com/random/100x100/?person'}
+                  alt={friend.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div className="ml-3 flex-1">
+                  <p className="font-medium">{friend.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {friend.totalPoints} pontos no total
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end mr-2">
+                    <span className="font-bold text-levelup-primary">{friend.weeklyPoints}</span>
+                    <span className="text-xs text-muted-foreground">pontos esta semana</span>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-levelup-danger">
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remover amigo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja remover {friend.name} da sua lista de amigos?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => removeFriendMutation.mutate({ 
+                            friendshipId: friend.id, 
+                            friendId: friend.userId 
+                          })}
+                          className="bg-levelup-danger hover:bg-levelup-danger/90"
+                        >
+                          Remover
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-              <div className="flex flex-col items-end">
-                <span className="font-bold text-levelup-primary">{friend.weeklyPoints}</span>
-                <span className="text-xs text-muted-foreground">pontos esta semana</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Você ainda não tem amigos na sua lista.</p>
+            <p className="mt-2">Convide alguém usando o botão acima!</p>
+          </div>
+        )}
       </div>
     </div>
   );
