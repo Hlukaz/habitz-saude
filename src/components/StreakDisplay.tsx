@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Flame, Calendar, Trophy, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { WeeklyActivityDay } from '@/hooks/useUserData';
-
 interface StreakDisplayProps {
   streak: number;
   lastActivityDate: string | null;
@@ -13,7 +11,6 @@ interface StreakDisplayProps {
   weeklyActivity?: WeeklyActivityDay[];
   className?: string;
 }
-
 const StreakDisplay = ({
   streak,
   lastActivityDate,
@@ -43,95 +40,53 @@ const StreakDisplay = ({
     const diffTime = Math.max(0, recoveryDate.getTime() - today.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
-  
   const active = isStreakActive();
   const daysToRecover = getDaysUntilBlockRecovery();
-  
-  // Use weeklyActivity from props if provided, otherwise use mock data
-  const displayWeeklyActivity = weeklyActivity || [
-    { day: 'D', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'T', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'Q', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'Q', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-    { day: 'S', date: '', completed: false, activityPoint: false, nutritionPoint: false },
-  ];
-  
-  return <div className={cn("p-4 rounded-xl bg-card text-card-foreground", className)}>
-      <div className="flex items-center mb-3">
-        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center mr-3 relative", active ? "bg-levelup-accent" : "bg-muted")}>
-          <Flame className={cn("w-5 h-5", active ? "text-white animate-pulse" : "text-muted-foreground")} />
-          {active && <div className="absolute -inset-1 rounded-full bg-levelup-accent/20 animate-[ping_2s_ease-in-out_infinite]" />}
-        </div>
-        <div className="flex-1">
-          <h3 className="font-bold">Ofensiva Diária</h3>
-          <p className="text-sm text-muted-foreground">
-            {active ? `Mantenha sua ofensiva de ${streak} ${streak === 1 ? 'dia' : 'dias'}!` : 'Faça uma atividade para iniciar sua ofensiva!'}
-          </p>
-        </div>
-        <div className="flex">
-          {[...Array(2)].map((_, i) => <Heart key={i} fill={i < streakBlocks ? "red" : "none"} className={cn("w-6 h-6 mx-0.5", i < streakBlocks ? "text-red-500" : "text-muted")} />)}
-        </div>
-      </div>
-      
-      {/* Contador Semanal - Versão com tamanho reduzido */}
-      <div className="grid grid-cols-7 gap-1 mb-4">
-        {displayWeeklyActivity.map((day, index) => (
-          <div 
-            key={index} 
-            className={cn(
-              "relative flex flex-col items-center justify-center p-1 rounded-full aspect-square transition-all duration-300",
-              day.completed ? "bg-levelup-accent" : "bg-muted/50"
-            )}
-          >
-            <span className={cn(
-              "text-xs font-bold",
-              day.completed ? "text-white" : "text-muted-foreground"
-            )}>
-              {day.day}
-            </span>
-            
-            {/* Efeito de fogo para dias completos (quando tem os dois pontos) */}
-            {day.completed && (
-              <>
-                <div className="absolute -inset-1 rounded-full bg-levelup-accent/20 animate-[ping_3s_ease-in-out_infinite]" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 overflow-hidden">
-                  <div className="w-full h-full bg-orange-500 animate-[pulse_2s_ease-in-out_infinite] rounded-b-full opacity-70" />
-                </div>
-              </>
-            )}
-            
-            {/* Indicadores de pontos - versão ainda menor */}
-            <div className="flex mt-0.5 space-x-0.5">
-              <div className={cn(
-                "w-1 h-1 rounded-full", 
-                day.activityPoint ? "bg-levelup-primary" : "bg-gray-300"
-              )} />
-              <div className={cn(
-                "w-1 h-1 rounded-full", 
-                day.nutritionPoint ? "bg-levelup-secondary" : "bg-gray-300"
-              )} />
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      {streakBlocks < 2 && daysToRecover > 0 && <div className="mt-2 text-xs text-muted-foreground text-center">
-          Recuperação do bloqueio em {daysToRecover} {daysToRecover === 1 ? 'dia' : 'dias'}
-        </div>}
-      
-      {streak >= 3 && <div className="flex items-center justify-between mt-3 text-sm">
-          <div className="flex items-center">
-            <Trophy className="w-4 h-4 text-levelup-accent mr-1" />
-            <span>Sequência completa: {Math.floor(streak / 3)}</span>
-          </div>
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 text-levelup-accent mr-1" />
-            <span>Ofensiva total: {streak} dias</span>
-          </div>
-        </div>}
-    </div>;
-};
 
+  // Use weeklyActivity from props if provided, otherwise use mock data
+  const displayWeeklyActivity = weeklyActivity || [{
+    day: 'D',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'S',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'T',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'Q',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'Q',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'S',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }, {
+    day: 'S',
+    date: '',
+    completed: false,
+    activityPoint: false,
+    nutritionPoint: false
+  }];
+  return;
+};
 export default StreakDisplay;
