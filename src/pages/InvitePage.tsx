@@ -168,7 +168,7 @@ const InvitePage = () => {
                 className="w-24 h-24 rounded-full object-cover mb-4"
               />
               <h2 className="text-xl font-bold mb-2">{inviterDetails?.name}</h2>
-              <p className="text-muted-foreground">Quer se conectar com você no LevelUp</p>
+              <p className="text-muted-foreground">Quer se conectar com você no Habitz</p>
             </div>
             
             <div className="flex justify-center">
