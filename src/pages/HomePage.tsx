@@ -81,6 +81,14 @@ const HomePage = () => {
       endDate: '2025-05-22'
     }
   ];
+
+  // Filtrar para mostrar apenas amigos da lista de amigos
+  // Note: No momento estamos usando dados mockados, mas quando integrarmos
+  // com o backend real, vamos buscar apenas amigos adicionados
+  const friendsOnly = friendRanking?.filter(friend => 
+    // Aqui incluímos o próprio usuário e os amigos
+    friend.id === userData.id || ['user-2', 'user-3', 'user-4', 'user-5'].includes(friend.id)
+  ) || [];
   
   return <div className="pb-20">
       {/* Header */}
@@ -136,8 +144,12 @@ const HomePage = () => {
               <div className="text-center p-4">Carregando ranking...</div>
             ) : rankingError ? (
               <div className="text-center p-4 text-red-500">Erro ao carregar ranking</div>
+            ) : friendsOnly.length > 0 ? (
+              <FriendRanking friends={friendsOnly} currentUserId={userData.id} />
             ) : (
-              <FriendRanking friends={friendRanking || []} currentUserId={userData.id} />
+              <div className="text-center p-6 bg-muted/30 rounded-xl">
+                <p className="text-muted-foreground">Adicione amigos para ver o ranking aqui.</p>
+              </div>
             )}
           </TabsContent>
         </Tabs>
@@ -150,7 +162,7 @@ const ChallengeRankCard = ({ challenge }) => {
   const daysLeft = () => {
     const today = new Date();
     const endDate = new Date(challenge.endDate);
-    const diffTime = Math.abs(endDate - today);
+    const diffTime = Math.abs(endDate.getTime() - today.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
