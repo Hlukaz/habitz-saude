@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, UserPlus, Check, X, Share2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -244,7 +243,7 @@ const FriendsPage = () => {
     const inviteLink = generateInviteLink();
     if (!inviteLink) return;
     
-    const whatsappUrl = `https://wa.me/?text=Olá! Estou te convidando para ser meu amigo no LevelUp. Clique no link para aceitar: ${encodeURIComponent(inviteLink)}`;
+    const whatsappUrl = `https://wa.me/?text=Olá! Estou te convidando para ser meu amigo no Habitz. Clique no link para aceitar: ${encodeURIComponent(inviteLink)}`;
     window.open(whatsappUrl, '_blank');
   };
 
