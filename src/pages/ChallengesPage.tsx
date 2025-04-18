@@ -1,9 +1,20 @@
-
 import React from 'react';
-import { Plus, Trophy, Users, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Trophy, Users, Calendar, DollarSign, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import ActivityTypeSelect from '@/components/ActivityTypeSelect';
+import { Separator } from '@/components/ui/separator';
 
-// Mock data for demonstration
 const mockActiveChallenges = [
   {
     id: 'challenge-1',
@@ -49,17 +60,89 @@ const mockCompletedChallenges = [
 ];
 
 const ChallengesPage = () => {
+  const [newChallengeActivityType, setNewChallengeActivityType] = React.useState<string | null>(null);
+
+  const availableChallenges = [
+    {
+      id: 'challenge-invite-1',
+      name: 'Corrida da Semana',
+      creator: 'João Silva',
+      participants: 2,
+      startDate: '20 Abr',
+      endDate: '27 Abr',
+      hasBet: true,
+      betAmount: 15
+    },
+    {
+      id: 'challenge-invite-2',
+      name: 'Yoga Matinal',
+      creator: 'Maria Santos',
+      participants: 4,
+      startDate: '22 Abr',
+      endDate: '29 Abr',
+      hasBet: false
+    }
+  ];
+
   return (
     <div className="pb-20">
-      {/* Header */}
       <header className="p-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-levelup-dark">Desafios</h1>
-        <button className="w-10 h-10 bg-levelup-primary rounded-full flex items-center justify-center text-white shadow-md">
-          <Plus className="w-5 h-5" />
-        </button>
+        <Sheet>
+          <SheetTrigger asChild>
+            <button className="w-10 h-10 bg-levelup-primary rounded-full flex items-center justify-center text-white shadow-md">
+              <Plus className="w-5 h-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Criar Novo Desafio</SheetTitle>
+              <SheetDescription>
+                Configure as regras do seu desafio e convide amigos para participar.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label htmlFor="challenge-name">Nome do Desafio</Label>
+                <Input id="challenge-name" placeholder="Digite o nome do desafio" />
+              </div>
+              
+              <ActivityTypeSelect
+                onSelect={setNewChallengeActivityType}
+                selectedActivityType={newChallengeActivityType}
+                className="w-full"
+              />
+
+              <div>
+                <Label htmlFor="bet-amount">Valor da Aposta (opcional)</Label>
+                <Input 
+                  id="bet-amount" 
+                  type="number" 
+                  placeholder="R$ 0,00" 
+                  min="0" 
+                  step="0.01" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Convidar Amigos</Label>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="w-full">
+                    <Users className="w-4 h-4 mr-2" />
+                    Selecionar Amigos
+                  </Button>
+                  <Button variant="outline">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <Button className="w-full">Criar Desafio</Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </header>
       
-      {/* Active Challenges */}
       <div className="px-4 mb-6">
         <h2 className="text-lg font-bold mb-3">Desafios Ativos</h2>
         <div className="space-y-4">
@@ -110,7 +193,48 @@ const ChallengesPage = () => {
         </div>
       </div>
       
-      {/* Completed Challenges */}
+      <div className="px-4 mb-6">
+        <h2 className="text-lg font-bold mb-3">Lista de Desafios</h2>
+        <div className="space-y-3">
+          {availableChallenges.map(challenge => (
+            <div 
+              key={challenge.id} 
+              className="bg-card p-4 rounded-lg shadow-sm border border-levelup-secondary/20"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium">{challenge.name}</h3>
+                <Button variant="outline" size="sm">
+                  Participar
+                </Button>
+              </div>
+              
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span>Criado por {challenge.creator}</span>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>{challenge.startDate} - {challenge.endDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    <span>{challenge.participants} participantes</span>
+                  </div>
+                  {challenge.hasBet && (
+                    <div className="flex items-center gap-1 text-levelup-accent">
+                      <DollarSign className="w-3 h-3" />
+                      <span>R${challenge.betAmount}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
       <div className="px-4">
         <h2 className="text-lg font-bold mb-3">Desafios Concluídos</h2>
         <div className="space-y-3">
