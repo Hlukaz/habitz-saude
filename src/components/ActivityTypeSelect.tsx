@@ -1,8 +1,6 @@
+
 import React from 'react';
-import { Activity, Bike, Dumbbell, Heart, Music, Trophy, Camera } from 'lucide-react';
-import { Running } from 'lucide-react/icons/running';
-import { Swim } from 'lucide-react/icons/swim';
-import { Yoga } from 'lucide-react/icons/yoga';
+import { Activity, Bike, Dumbbell, Heart, Music, Trophy, Camera, Running, Swim, Yoga } from 'lucide-react';
 import {
   Select,
   SelectContent,
