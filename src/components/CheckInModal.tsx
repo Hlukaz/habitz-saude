@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { X, Upload, Camera, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -59,7 +60,7 @@ const CheckInModal = ({ type, isOpen, onClose, onSubmit }: CheckInModalProps) =>
       
       setTimeout(() => {
         if (success) {
-          onSubmit(images, type === 'activity' ? selectedActivityType : undefined);
+          onSubmit(images, selectedActivityType || undefined);
           toast.success('Check-in realizado com sucesso!');
         } else {
           toast.error('As imagens não foram validadas. Tente novamente com outras fotos.');

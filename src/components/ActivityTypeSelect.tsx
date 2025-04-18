@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Activity, Walking, Running, Bike, Swimming, Dumbbell, Yoga, Music, Trophy, Heart } from 'lucide-react';
+import { Activity, Bike, Dumbbell, Heart, Music, Trophy } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ActivityTypeSelectProps {
   onSelect: (activityTypeId: string) => void;
@@ -19,21 +20,8 @@ interface ActivityTypeSelectProps {
 interface ActivityType {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: string;
 }
-
-const activityIcons: Record<string, React.FC> = {
-  walking: Walking,
-  running: Running,
-  bicycle: Bike,
-  swimming: Swimming,
-  dumbbell: Dumbbell,
-  yoga: Yoga,
-  activity: Activity,
-  music: Music,
-  trophy: Trophy,
-  meditation: Heart
-};
 
 const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({ 
   onSelect, 
@@ -54,16 +42,38 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
         return;
       }
 
-      const typesWithIcons = data.map(type => ({
-        ...type,
-        icon: activityIcons[type.icon] || Activity
-      }));
-
-      setActivityTypes(typesWithIcons);
+      setActivityTypes(data || []);
     };
 
     fetchActivityTypes();
   }, []);
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'walking':
+        return <Activity className="w-4 h-4" />;
+      case 'running':
+        return <Activity className="w-4 h-4" />;
+      case 'bicycle':
+        return <Bike className="w-4 h-4" />;
+      case 'swimming':
+        return <Activity className="w-4 h-4" />;
+      case 'dumbbell':
+        return <Dumbbell className="w-4 h-4" />;
+      case 'yoga':
+        return <Activity className="w-4 h-4" />;
+      case 'activity':
+        return <Activity className="w-4 h-4" />;
+      case 'music':
+        return <Music className="w-4 h-4" />;
+      case 'trophy':
+        return <Trophy className="w-4 h-4" />;
+      case 'meditation':
+        return <Heart className="w-4 h-4" />;
+      default:
+        return <Activity className="w-4 h-4" />;
+    }
+  };
 
   return (
     <div className={className}>
@@ -76,21 +86,18 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
           <SelectValue placeholder="Selecione o tipo de atividade" />
         </SelectTrigger>
         <SelectContent>
-          {activityTypes.map((type) => {
-            const IconComponent = type.icon;
-            return (
-              <SelectItem 
-                key={type.id} 
-                value={type.id}
-                className="flex items-center gap-2"
-              >
-                <span className="flex items-center gap-2">
-                  <IconComponent className="w-4 h-4" />
-                  {type.name}
-                </span>
-              </SelectItem>
-            );
-          })}
+          {activityTypes.map((type) => (
+            <SelectItem 
+              key={type.id} 
+              value={type.id}
+              className="flex items-center gap-2"
+            >
+              <span className="flex items-center gap-2">
+                {getIconComponent(type.icon)}
+                {type.name}
+              </span>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

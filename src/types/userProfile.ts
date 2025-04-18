@@ -13,6 +13,7 @@ export type UserProfile = {
   last_streak_update: string | null;
   last_block_reset: string | null;
   notification_token: string | null;
+  xp: number;
   created_at: string;
   updated_at: string;
 };
