@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Activity, Bike, Dumbbell, Heart, Music, Trophy } from 'lucide-react';
+import { Activity, Bike, Dumbbell, Heart, Music, Trophy, Camera, Running, SwimmingPool, Yoga } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -53,15 +53,15 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
       case 'walking':
         return <Activity className="w-4 h-4" />;
       case 'running':
-        return <Activity className="w-4 h-4" />;
+        return <Running className="w-4 h-4" />;
       case 'bicycle':
         return <Bike className="w-4 h-4" />;
       case 'swimming':
-        return <Activity className="w-4 h-4" />;
+        return <SwimmingPool className="w-4 h-4" />;
       case 'dumbbell':
         return <Dumbbell className="w-4 h-4" />;
       case 'yoga':
-        return <Activity className="w-4 h-4" />;
+        return <Yoga className="w-4 h-4" />;
       case 'activity':
         return <Activity className="w-4 h-4" />;
       case 'music':
@@ -71,7 +71,7 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
       case 'meditation':
         return <Heart className="w-4 h-4" />;
       default:
-        return <Activity className="w-4 h-4" />;
+        return <Camera className="w-4 h-4" />;
     }
   };
 

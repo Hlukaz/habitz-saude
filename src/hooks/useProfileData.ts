@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +28,7 @@ export const fetchProfiles = async (): Promise<UserProfile[]> => {
     last_streak_update: profile.last_streak_update,
     last_block_reset: profile.last_block_reset,
     notification_token: profile.notification_token,
+    xp: profile.xp || 0,
     created_at: profile.created_at,
     updated_at: profile.updated_at
   }));
@@ -60,6 +60,7 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
     last_streak_update: data.last_streak_update,
     last_block_reset: data.last_block_reset,
     notification_token: data.notification_token,
+    xp: data.xp || 0,
     created_at: data.created_at,
     updated_at: data.updated_at
   };

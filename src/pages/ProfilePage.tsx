@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -48,7 +47,6 @@ const ProfilePage = () => {
     );
   }
 
-  // Fallback para caso o perfil não esteja disponível
   const userData: UserProfile = profile || {
     id: user?.id || '',
     username: user?.email?.split('@')[0] || 'Usuário',
@@ -63,6 +61,7 @@ const ProfilePage = () => {
     last_streak_update: null,
     last_block_reset: null,
     notification_token: null,
+    xp: 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -72,10 +71,8 @@ const ProfilePage = () => {
 
   return (
     <div className="pb-20">
-      {/* Header */}
       <ProfilePageHeader />
       
-      {/* User Profile */}
       <div className="px-4 mb-6">
         <ProfileHeader 
           userData={userData} 
@@ -85,7 +82,6 @@ const ProfilePage = () => {
         />
       </div>
       
-      {/* Streak Display */}
       <div className="px-4 mb-6">
         <StreakDisplay 
           streak={userData.streak || 0}
@@ -96,7 +92,6 @@ const ProfilePage = () => {
         />
       </div>
       
-      {/* Achievements */}
       <div className="px-4 mb-6">
         <AchievementsList 
           achievements={achievements} 
@@ -104,7 +99,6 @@ const ProfilePage = () => {
         />
       </div>
       
-      {/* Settings */}
       <div className="px-4">
         <ProfileSettings onLogout={handleLogout} />
       </div>
