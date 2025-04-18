@@ -96,6 +96,82 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          id: string
+          joined_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          id?: string
+          joined_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          id?: string
+          joined_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          activity_type_id: string | null
+          bet_amount: number | null
+          created_at: string
+          creator_id: string
+          end_date: string
+          has_bet: boolean
+          id: string
+          name: string
+          start_date: string
+        }
+        Insert: {
+          activity_type_id?: string | null
+          bet_amount?: number | null
+          created_at?: string
+          creator_id: string
+          end_date: string
+          has_bet?: boolean
+          id?: string
+          name: string
+          start_date: string
+        }
+        Update: {
+          activity_type_id?: string | null
+          bet_amount?: number | null
+          created_at?: string
+          creator_id?: string
+          end_date?: string
+          has_bet?: boolean
+          id?: string
+          name?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_activity_type_id_fkey"
+            columns: ["activity_type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friend_requests: {
         Row: {
           created_at: string | null

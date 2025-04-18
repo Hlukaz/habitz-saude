@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
-// Tipos para desafios
+// Types for challenges
 export type Challenge = {
   id: string;
   name: string;
@@ -36,62 +35,44 @@ export type ChallengeWithDetails = Challenge & {
   wasWinner?: boolean;
 };
 
-// Buscar desafios ativos do usuário
+// Fetch active challenges where user is a participant
 const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithDetails[]> => {
-  // Desafios onde o usuário é participante e aceitou o convite
   const { data: participantChallenges, error: participantError } = await supabase
     .from('challenge_participants')
     .select(`
       status,
-      challenge:challenges(
-        id,
-        name,
-        creator_id,
-        activity_type_id,
-        start_date,
-        end_date,
-        has_bet,
-        bet_amount,
-        created_at,
+      challenges (
+        *,
         activity_types(name),
         profiles:creator_id(username, full_name)
       )
     `)
     .eq('user_id', userId)
-    .eq('status', 'accepted')
-    .order('joined_at', { ascending: false });
+    .eq('status', 'accepted');
 
   if (participantError) {
-    console.error('Erro ao buscar desafios como participante:', participantError);
+    console.error('Error fetching active challenges:', participantError);
     return [];
   }
 
-  // Transformar os dados para o formato esperado
-  const activeChallenges = participantChallenges
-    .filter(item => item.challenge)
+  const activeChallenges = (participantChallenges || [])
+    .filter(item => item.challenges)
     .map(item => {
-      const challenge = item.challenge as any;
+      const challenge = item.challenges as any;
       return {
-        id: challenge.id,
-        name: challenge.name,
-        creator_id: challenge.creator_id,
-        activity_type_id: challenge.activity_type_id,
+        ...challenge,
         start_date: formatDateShort(challenge.start_date),
         end_date: formatDateShort(challenge.end_date),
-        has_bet: challenge.has_bet,
-        bet_amount: challenge.bet_amount,
-        created_at: challenge.created_at,
-        participants: 0, // Será atualizado depois
+        participants: 0,
         activity_name: challenge.activity_types?.name,
         creator_name: challenge.profiles?.full_name || challenge.profiles?.username,
         is_creator: challenge.creator_id === userId,
         status: item.status,
-        // Calcular progresso baseado na data atual vs duração do desafio
         progress: calculateChallengeProgress(challenge.start_date, challenge.end_date)
       };
     });
 
-  // Buscar o número de participantes para cada desafio
+  // Fetch participant count for each challenge
   for (const challenge of activeChallenges) {
     const { count } = await supabase
       .from('challenge_participants')
@@ -105,53 +86,35 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
   return activeChallenges;
 };
 
-// Buscar convites de desafios pendentes para o usuário
+// Fetch challenge invites
 const fetchChallengeInvites = async (userId: string): Promise<ChallengeWithDetails[]> => {
-  const { data, error } = await supabase
+  const { data: invites, error } = await supabase
     .from('challenge_participants')
     .select(`
-      id,
       status,
-      joined_at,
-      challenge:challenges(
-        id,
-        name,
-        creator_id, 
-        activity_type_id,
-        start_date,
-        end_date,
-        has_bet,
-        bet_amount,
-        created_at,
+      challenges (
+        *,
         activity_types(name),
         profiles:creator_id(username, full_name)
       )
     `)
     .eq('user_id', userId)
-    .eq('status', 'pending')
-    .order('joined_at', { ascending: false });
+    .eq('status', 'pending');
 
   if (error) {
-    console.error('Erro ao buscar convites de desafios:', error);
+    console.error('Error fetching challenge invites:', error);
     return [];
   }
 
-  // Transformar os dados para o formato esperado
-  const invites = data
-    .filter(item => item.challenge)
+  const challenges = (invites || [])
+    .filter(item => item.challenges)
     .map(item => {
-      const challenge = item.challenge as any;
+      const challenge = item.challenges as any;
       return {
-        id: challenge.id,
-        name: challenge.name,
-        creator_id: challenge.creator_id,
-        activity_type_id: challenge.activity_type_id,
+        ...challenge,
         start_date: formatDateShort(challenge.start_date),
         end_date: formatDateShort(challenge.end_date),
-        has_bet: challenge.has_bet,
-        bet_amount: challenge.bet_amount,
-        created_at: challenge.created_at,
-        participants: 0, // Será atualizado depois
+        participants: 0,
         activity_name: challenge.activity_types?.name,
         creator_name: challenge.profiles?.full_name || challenge.profiles?.username,
         is_creator: challenge.creator_id === userId,
@@ -159,80 +122,8 @@ const fetchChallengeInvites = async (userId: string): Promise<ChallengeWithDetai
       };
     });
 
-  // Buscar o número de participantes para cada desafio
-  for (const invite of invites) {
-    const { count } = await supabase
-      .from('challenge_participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('challenge_id', invite.id)
-      .eq('status', 'accepted');
-    
-    invite.participants = count || 0;
-  }
-
-  return invites;
-};
-
-// Buscar desafios concluídos do usuário
-const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDetails[]> => {
-  const now = new Date().toISOString();
-  
-  const { data, error } = await supabase
-    .from('challenge_participants')
-    .select(`
-      status,
-      challenge:challenges(
-        id,
-        name,
-        creator_id,
-        activity_type_id,
-        start_date,
-        end_date,
-        has_bet,
-        bet_amount,
-        created_at,
-        activity_types(name),
-        profiles:creator_id(username, full_name)
-      )
-    `)
-    .eq('user_id', userId)
-    .eq('status', 'accepted')
-    .lt('challenge.end_date', now)
-    .order('challenge.end_date', { ascending: false });
-
-  if (error) {
-    console.error('Erro ao buscar desafios concluídos:', error);
-    return [];
-  }
-
-  // Por enquanto, simularemos o resultado do vencedor aleatoriamente
-  const completedChallenges = data
-    .filter(item => item.challenge)
-    .map(item => {
-      const challenge = item.challenge as any;
-      const wasWinner = Math.random() > 0.5; // Simulação temporária 
-      
-      return {
-        id: challenge.id,
-        name: challenge.name,
-        creator_id: challenge.creator_id,
-        activity_type_id: challenge.activity_type_id,
-        start_date: formatDateShort(challenge.start_date),
-        end_date: formatDateShort(challenge.end_date),
-        has_bet: challenge.has_bet,
-        bet_amount: challenge.bet_amount,
-        created_at: challenge.created_at,
-        participants: 0,
-        activity_name: challenge.activity_types?.name,
-        creator_name: challenge.profiles?.full_name || challenge.profiles?.username,
-        is_creator: challenge.creator_id === userId,
-        status: 'accepted' as const,
-        wasWinner
-      };
-    });
-
-  // Buscar o número de participantes para cada desafio
-  for (const challenge of completedChallenges) {
+  // Fetch participant count for each challenge
+  for (const challenge of challenges) {
     const { count } = await supabase
       .from('challenge_participants')
       .select('*', { count: 'exact', head: true })
@@ -242,10 +133,10 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
     challenge.participants = count || 0;
   }
 
-  return completedChallenges;
+  return challenges;
 };
 
-// Criar um novo desafio
+// Create a new challenge
 const createChallenge = async (
   userId: string,
   challengeData: {
@@ -258,7 +149,7 @@ const createChallenge = async (
     invitedFriends?: string[];
   }
 ) => {
-  // Criar o desafio
+  // Create the challenge
   const { data: challenge, error: challengeError } = await supabase
     .from('challenges')
     .insert({
@@ -277,7 +168,7 @@ const createChallenge = async (
     throw challengeError;
   }
 
-  // Adicionar o criador como participante (status já aceito)
+  // Add the creator as a participant (status already accepted)
   const { error: participantError } = await supabase
     .from('challenge_participants')
     .insert({
@@ -290,7 +181,7 @@ const createChallenge = async (
     throw participantError;
   }
 
-  // Convidar amigos se fornecidos
+  // Invite friends if provided
   if (challengeData.invitedFriends && challengeData.invitedFriends.length > 0) {
     const invites = challengeData.invitedFriends.map(friendId => ({
       challenge_id: challenge.id,
@@ -303,15 +194,14 @@ const createChallenge = async (
       .insert(invites);
 
     if (inviteError) {
-      console.error('Erro ao convidar amigos:', inviteError);
-      // Não vamos falhar o desafio inteiro se os convites falharem
+      console.error('Error inviting friends:', inviteError);
     }
   }
 
   return challenge;
 };
 
-// Aceitar um convite de desafio
+// Accept a challenge invite
 const acceptChallengeInvite = async (userId: string, challengeId: string) => {
   const { error } = await supabase
     .from('challenge_participants')
@@ -324,7 +214,7 @@ const acceptChallengeInvite = async (userId: string, challengeId: string) => {
   }
 };
 
-// Recusar um convite de desafio
+// Decline a challenge invite
 const declineChallengeInvite = async (userId: string, challengeId: string) => {
   const { error } = await supabase
     .from('challenge_participants')
@@ -337,7 +227,7 @@ const declineChallengeInvite = async (userId: string, challengeId: string) => {
   }
 };
 
-// Funções auxiliares
+// Helper functions
 const formatDateShort = (dateString: string) => {
   const date = new Date(dateString);
   const day = date.getDate();
@@ -350,16 +240,12 @@ const calculateChallengeProgress = (startDateStr: string, endDateStr: string) =>
   const endDate = new Date(endDateStr);
   const currentDate = new Date();
 
-  // Se ainda não começou
   if (currentDate < startDate) return 0;
-  // Se já terminou
   if (currentDate > endDate) return 100;
 
-  // Calcula a duração total e quanto já passou
   const totalDuration = endDate.getTime() - startDate.getTime();
   const elapsedDuration = currentDate.getTime() - startDate.getTime();
   
-  // Calcula a porcentagem
   const progress = Math.round((elapsedDuration / totalDuration) * 100);
   return Math.min(100, Math.max(0, progress));
 };
@@ -379,7 +265,7 @@ export const useChallenges = () => {
     invitedFriends: [] as string[]
   });
 
-  // Query para buscar desafios ativos
+  // Query for active challenges
   const {
     data: activeChallenges,
     isLoading: activeChallengesLoading,
@@ -390,7 +276,7 @@ export const useChallenges = () => {
     enabled: !!userId
   });
 
-  // Query para buscar convites de desafios
+  // Query for challenge invites
   const {
     data: challengeInvites,
     isLoading: challengeInvitesLoading,
@@ -402,6 +288,77 @@ export const useChallenges = () => {
   });
 
   // Query para buscar desafios concluídos
+  const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDetails[]> => {
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('challenge_participants')
+      .select(`
+        status,
+        challenge:challenges(
+          id,
+          name,
+          creator_id,
+          activity_type_id,
+          start_date,
+          end_date,
+          has_bet,
+          bet_amount,
+          created_at,
+          activity_types(name),
+          profiles:creator_id(username, full_name)
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'accepted')
+      .lt('challenge.end_date', now)
+      .order('challenge.end_date', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar desafios concluídos:', error);
+      return [];
+    }
+
+    // Por enquanto, simularemos o resultado do vencedor aleatoriamente
+    const completedChallenges = data
+      .filter(item => item.challenge)
+      .map(item => {
+        const challenge = item.challenge as any;
+        const wasWinner = Math.random() > 0.5; // Simulação temporária 
+        
+        return {
+          id: challenge.id,
+          name: challenge.name,
+          creator_id: challenge.creator_id,
+          activity_type_id: challenge.activity_type_id,
+          start_date: formatDateShort(challenge.start_date),
+          end_date: formatDateShort(challenge.end_date),
+          has_bet: challenge.has_bet,
+          bet_amount: challenge.bet_amount,
+          created_at: challenge.created_at,
+          participants: 0,
+          activity_name: challenge.activity_types?.name,
+          creator_name: challenge.profiles?.full_name || challenge.profiles?.username,
+          is_creator: challenge.creator_id === userId,
+          status: 'accepted' as const,
+          wasWinner
+        };
+      });
+
+    // Buscar o número de participantes para cada desafio
+    for (const challenge of completedChallenges) {
+      const { count } = await supabase
+        .from('challenge_participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('challenge_id', challenge.id)
+        .eq('status', 'accepted');
+      
+      challenge.participants = count || 0;
+    }
+
+    return completedChallenges;
+  };
+
   const {
     data: completedChallenges,
     isLoading: completedChallengesLoading,
@@ -412,20 +369,19 @@ export const useChallenges = () => {
     enabled: !!userId
   });
 
-  // Mutation para criar um novo desafio
+  // Mutation for creating a new challenge
   const createChallengeMutation = useMutation({
     mutationFn: (challengeData: typeof newChallenge) => {
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new Error('User not authenticated');
       }
       return createChallenge(userId, challengeData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeChallenges'] });
       queryClient.invalidateQueries({ queryKey: ['challengeInvites'] });
-      toast.success('Desafio criado com sucesso!');
+      toast.success('Challenge created successfully!');
       setChallengeFormOpen(false);
-      // Reset do formulário
       setNewChallenge({
         name: '',
         activity_type_id: null,
@@ -437,45 +393,45 @@ export const useChallenges = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Erro ao criar desafio:', error);
-      toast.error('Erro ao criar desafio: ' + error.message);
+      console.error('Error creating challenge:', error);
+      toast.error('Error creating challenge: ' + error.message);
     }
   });
 
-  // Mutation para aceitar um convite de desafio
+  // Mutation for accepting a challenge invite
   const acceptChallengeMutation = useMutation({
     mutationFn: (challengeId: string) => {
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new Error('User not authenticated');
       }
       return acceptChallengeInvite(userId, challengeId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activeChallenges'] });
       queryClient.invalidateQueries({ queryKey: ['challengeInvites'] });
-      toast.success('Convite aceito com sucesso!');
+      toast.success('Challenge accepted!');
     },
     onError: (error: any) => {
-      console.error('Erro ao aceitar convite:', error);
-      toast.error('Erro ao aceitar convite: ' + error.message);
+      console.error('Error accepting challenge:', error);
+      toast.error('Error accepting challenge: ' + error.message);
     }
   });
 
-  // Mutation para recusar um convite de desafio
+  // Mutation for declining a challenge invite
   const declineChallengeMutation = useMutation({
     mutationFn: (challengeId: string) => {
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new Error('User not authenticated');
       }
       return declineChallengeInvite(userId, challengeId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challengeInvites'] });
-      toast.success('Convite recusado.');
+      toast.success('Challenge declined.');
     },
     onError: (error: any) => {
-      console.error('Erro ao recusar convite:', error);
-      toast.error('Erro ao recusar convite: ' + error.message);
+      console.error('Error declining challenge:', error);
+      toast.error('Error declining challenge: ' + error.message);
     }
   });
 
