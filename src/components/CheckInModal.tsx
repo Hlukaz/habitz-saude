@@ -1,31 +1,30 @@
-
 import React, { useState } from 'react';
 import { X, Upload, Camera, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import ActivityTypeSelect from './ActivityTypeSelect';
 
 interface CheckInModalProps {
   type: 'activity' | 'nutrition';
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (images: string[]) => void;
+  onSubmit: (images: string[], activityTypeId?: string) => void;
 }
 
 const CheckInModal = ({ type, isOpen, onClose, onSubmit }: CheckInModalProps) => {
   const [images, setImages] = useState<string[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<'success' | 'failure' | null>(null);
+  const [selectedActivityType, setSelectedActivityType] = useState<string | null>(null);
   
   const requiredImages = type === 'activity' ? 1 : 3;
   const title = type === 'activity' ? 'Check-in de Atividade Física' : 'Check-in de Alimentação';
   const description = type === 'activity' 
-    ? 'Envie uma foto da sua atividade física para ganhar 1 ponto.'
-    : 'Envie 3 fotos das suas refeições saudáveis para ganhar 1 ponto.';
+    ? 'Selecione o tipo de atividade e envie uma foto da sua atividade física para ganhar pontos.'
+    : 'Envie 3 fotos das suas refeições saudáveis para ganhar pontos.';
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // In a real app, we'd upload these to a server
-      // For now, we'll create object URLs as placeholders
       const newImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
       
       if (images.length + newImages.length > requiredImages) {
@@ -46,19 +45,21 @@ const CheckInModal = ({ type, isOpen, onClose, onSubmit }: CheckInModalProps) =>
       toast.error(`Você precisa enviar ${requiredImages} ${requiredImages === 1 ? 'imagem' : 'imagens'}.`);
       return;
     }
+
+    if (type === 'activity' && !selectedActivityType) {
+      toast.error('Selecione o tipo de atividade física');
+      return;
+    }
     
-    // Simulate AI verification
     setIsVerifying(true);
     
     setTimeout(() => {
-      // In a real app, we'd send the images to an AI model for verification
-      // Here we'll just simulate success
-      const success = Math.random() > 0.2; // 80% chance of success
+      const success = Math.random() > 0.2;
       setVerificationResult(success ? 'success' : 'failure');
       
       setTimeout(() => {
         if (success) {
-          onSubmit(images);
+          onSubmit(images, type === 'activity' ? selectedActivityType : undefined);
           toast.success('Check-in realizado com sucesso!');
         } else {
           toast.error('As imagens não foram validadas. Tente novamente com outras fotos.');
@@ -89,6 +90,14 @@ const CheckInModal = ({ type, isOpen, onClose, onSubmit }: CheckInModalProps) =>
         
         <div className="p-4">
           <p className="text-muted-foreground mb-4">{description}</p>
+          
+          {type === 'activity' && (
+            <ActivityTypeSelect
+              onSelect={setSelectedActivityType}
+              selectedActivityType={selectedActivityType}
+              className="mb-4"
+            />
+          )}
           
           <div className="grid grid-cols-3 gap-3 mb-4">
             {Array.from({ length: requiredImages }).map((_, index) => (

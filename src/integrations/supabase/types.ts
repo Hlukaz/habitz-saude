@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievement_activities: {
+        Row: {
+          achievement_id: string
+          activity_type_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          achievement_id: string
+          activity_type_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          achievement_id?: string
+          activity_type_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_activities_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achievement_activities_activity_type_id_fkey"
+            columns: ["activity_type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements: {
         Row: {
           created_at: string | null
@@ -17,6 +53,7 @@ export type Database = {
           id: string
           name: string
           required_points: number
+          xp_points: number
         }
         Insert: {
           created_at?: string | null
@@ -25,6 +62,7 @@ export type Database = {
           id?: string
           name: string
           required_points?: number
+          xp_points?: number
         }
         Update: {
           created_at?: string | null
@@ -33,6 +71,28 @@ export type Database = {
           id?: string
           name?: string
           required_points?: number
+          xp_points?: number
+        }
+        Relationships: []
+      }
+      activity_types: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -128,6 +188,7 @@ export type Database = {
           total_points: number | null
           updated_at: string | null
           username: string | null
+          xp: number
         }
         Insert: {
           activity_points?: number | null
@@ -145,6 +206,7 @@ export type Database = {
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
+          xp?: number
         }
         Update: {
           activity_points?: number | null
@@ -162,6 +224,7 @@ export type Database = {
           total_points?: number | null
           updated_at?: string | null
           username?: string | null
+          xp?: number
         }
         Relationships: []
       }
@@ -203,6 +266,7 @@ export type Database = {
       }
       user_checkins: {
         Row: {
+          activity_type_id: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -210,6 +274,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activity_type_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -217,13 +282,22 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activity_type_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_checkins_activity_type_id_fkey"
+            columns: ["activity_type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
