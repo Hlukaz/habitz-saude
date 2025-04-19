@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Plus, Users, Share2 } from 'lucide-react';
+import { Plus, Users, Share2, Check } from 'lucide-react'; // Added Check import
 import {
   Sheet,
   SheetContent,
@@ -22,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ActivityTypeSelect from '@/components/ActivityTypeSelect';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 
 type Friend = {
   id: string;
@@ -39,6 +39,7 @@ type CreateChallengeSheetProps = {
     end_date: string;
     has_bet: boolean;
     bet_amount: number | null;
+    is_habit_forming: boolean;
     invitedFriends: string[];
   };
   onChallengeChange: (challenge: any) => void;
@@ -106,10 +107,33 @@ const CreateChallengeSheet = ({
             />
           </div>
           
+          <div className="space-y-2">
+            <Label>Tipo de Desafio</Label>
+            <ScrollArea className="h-40 w-full">
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant={newChallenge.is_habit_forming ? 'default' : 'outline'}
+                  onClick={() => onChallengeChange({...newChallenge, is_habit_forming: true})}
+                >
+                  Formação de Hábito
+                  {newChallenge.is_habit_forming && <Check className="ml-2 w-4 h-4" />}
+                </Button>
+                <Button 
+                  variant={!newChallenge.is_habit_forming ? 'default' : 'outline'}
+                  onClick={() => onChallengeChange({...newChallenge, is_habit_forming: false})}
+                >
+                  Desafio Pontual
+                  {!newChallenge.is_habit_forming && <Check className="ml-2 w-4 h-4" />}
+                </Button>
+              </div>
+            </ScrollArea>
+          </div>
+
           <ActivityTypeSelect
             onSelect={(type) => onChallengeChange({...newChallenge, activity_type_id: type})}
             selectedActivityType={newChallenge.activity_type_id}
             className="w-full"
+            filterHabitForming={newChallenge.is_habit_forming}
           />
 
           <div className="grid grid-cols-2 gap-4">

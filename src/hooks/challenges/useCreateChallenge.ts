@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ export const useCreateChallenge = (userId: string | undefined) => {
     end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     has_bet: false,
     bet_amount: null as number | null,
+    is_habit_forming: false,
     invitedFriends: [] as string[]
   });
 
@@ -87,6 +87,7 @@ export const useCreateChallenge = (userId: string | undefined) => {
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         has_bet: false,
         bet_amount: null,
+        is_habit_forming: false,
         invitedFriends: []
       });
     },

@@ -10,32 +10,42 @@ import {
 } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ActivityTypeSelectProps {
   onSelect: (activityTypeId: string) => void;
   selectedActivityType: string | null;
   className?: string;
+  filterHabitForming?: boolean;
 }
 
 interface ActivityType {
   id: string;
   name: string;
   icon: string;
+  is_habit_forming: boolean;
 }
 
 const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({ 
   onSelect, 
   selectedActivityType,
-  className 
+  className,
+  filterHabitForming = false
 }) => {
   const [activityTypes, setActivityTypes] = React.useState<ActivityType[]>([]);
 
   React.useEffect(() => {
     const fetchActivityTypes = async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('activity_types')
         .select('*')
         .order('name');
+      
+      if (filterHabitForming !== undefined) {
+        query = query.eq('is_habit_forming', filterHabitForming);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching activity types:', error);
@@ -46,7 +56,7 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
     };
 
     fetchActivityTypes();
-  }, []);
+  }, [filterHabitForming]);
 
   const getIconComponent = (iconName: string) => {
     switch (iconName) {
@@ -86,18 +96,20 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
           <SelectValue placeholder="Selecione o tipo de atividade" />
         </SelectTrigger>
         <SelectContent>
-          {activityTypes.map((type) => (
-            <SelectItem 
-              key={type.id} 
-              value={type.id}
-              className="flex items-center gap-2"
-            >
-              <span className="flex items-center gap-2">
-                {getIconComponent(type.icon)}
-                {type.name}
-              </span>
-            </SelectItem>
-          ))}
+          <ScrollArea className="h-40 w-full">
+            {activityTypes.map((type) => (
+              <SelectItem 
+                key={type.id} 
+                value={type.id}
+                className="flex items-center gap-2"
+              >
+                <span className="flex items-center gap-2">
+                  {getIconComponent(type.icon)}
+                  {type.name}
+                </span>
+              </SelectItem>
+            ))}
+          </ScrollArea>
         </SelectContent>
       </Select>
     </div>

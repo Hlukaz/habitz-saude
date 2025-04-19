@@ -80,18 +80,21 @@ export type Database = {
           created_at: string
           icon: string
           id: string
+          is_habit_forming: boolean | null
           name: string
         }
         Insert: {
           created_at?: string
           icon: string
           id?: string
+          is_habit_forming?: boolean | null
           name: string
         }
         Update: {
           created_at?: string
           icon?: string
           id?: string
+          is_habit_forming?: boolean | null
           name?: string
         }
         Relationships: []
