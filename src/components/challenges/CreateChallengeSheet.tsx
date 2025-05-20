@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ActivityTypeSelect from '@/components/ActivityTypeSelect';
-import ChallengeTypeSelector from './form/ChallengeTypeSelector';
-import DateRangeSelector from './form/DateRangeSelector';
-import BetInput from './form/BetInput';
-import FriendSelector from './form/FriendSelector';
+import ChallengeTypeSelector from '@/components/form/ChallengeTypeSelector';
+import DateRangeSelector from '@/components/form/DateRangeSelector';
+import BetInput from '@/components/form/BetInput';
+import FriendSelector from '@/components/form/FriendSelector';
 
 interface CreateChallengeSheetProps {
   open: boolean;
@@ -71,7 +71,7 @@ const CreateChallengeSheet = ({
           
           <ChallengeTypeSelector
             isHabitForming={newChallenge.is_habit_forming}
-            onChange={(isHabitForming) => onChallengeChange({...newChallenge, is_habit_forming})}
+            onChange={(isHabitForming) => onChallengeChange({...newChallenge, is_habit_forming: isHabitForming})}
           />
 
           <ActivityTypeSelect
