@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ActivityTypePoints } from '@/hooks/useUserData';
+import { ActivityTypePoints } from '@/types/activityTypes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dumbbell } from 'lucide-react';
 

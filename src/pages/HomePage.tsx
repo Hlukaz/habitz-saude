@@ -1,6 +1,5 @@
 
-import React, { useState } from 'react';
-import { toast } from 'sonner';
+import React from 'react';
 import PointsDisplay from '@/components/PointsDisplay';
 import FriendRanking from '@/components/FriendRanking';
 import StreakDisplay from '@/components/StreakDisplay';
@@ -12,9 +11,8 @@ import { formatCurrentWeek } from '@/utils/dateUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const HomePage = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  
   const {
     userProfile,
     profileLoading,
@@ -90,7 +88,8 @@ const HomePage = () => {
     friend.id === userData.id || ['user-2', 'user-3', 'user-4', 'user-5'].includes(friend.id)
   ) || [];
   
-  return <div className="pb-20">
+  return (
+    <div className="pb-20">
       {/* Header */}
       <HomeHeader currentWeek={currentWeek} />
       
@@ -116,7 +115,11 @@ const HomePage = () => {
       </div>
       
       {/* Check-in Section */}
-      <CheckInSection checkInType={checkInType} setCheckInType={setCheckInType} onSubmit={handleCheckInSubmit} />
+      <CheckInSection 
+        checkInType={checkInType} 
+        setCheckInType={setCheckInType} 
+        onSubmit={handleCheckInSubmit} 
+      />
       
       {/* Ranking Tabs */}
       <div className="px-4 mb-6">
@@ -154,7 +157,8 @@ const HomePage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 // Challenge Rank Card Component
