@@ -1,13 +1,16 @@
+
 import React from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useProfileData } from '@/hooks/useProfileData';
+import { useUserData } from '@/hooks/useUserData';
 import { UserProfile } from '@/types/userProfile';
 import AchievementsList from '@/components/AchievementsList';
 import StreakDisplay from '@/components/StreakDisplay';
 import ProfileHeader from '@/components/ProfileHeader';
 import ProfileSettings from '@/components/ProfileSettings';
 import ProfilePageHeader from '@/components/ProfilePageHeader';
+import ActivityTypePointsDisplay from '@/components/ActivityTypePointsDisplay';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -18,6 +21,11 @@ const ProfilePage = () => {
     error, 
     achievements 
   } = useProfileData(user?.id);
+
+  const {
+    activityTypePoints,
+    activityTypePointsLoading
+  } = useUserData(user?.id);
 
   const handleLogout = async () => {
     try {
@@ -89,6 +97,13 @@ const ProfilePage = () => {
           streakBlocks={userData.streak_blocks || 2}
           lastBlockReset={userData.last_block_reset}
           className="shadow-sm"
+        />
+      </div>
+      
+      <div className="px-4">
+        <ActivityTypePointsDisplay 
+          activityPoints={activityTypePoints || []}
+          isLoading={activityTypePointsLoading}
         />
       </div>
       

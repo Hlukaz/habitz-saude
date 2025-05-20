@@ -1,10 +1,11 @@
+
 import React from 'react';
 import CheckInButton from '@/components/CheckInButton';
 import CheckInModal from '@/components/CheckInModal';
 interface CheckInSectionProps {
   checkInType: 'activity' | 'nutrition' | null;
   setCheckInType: (type: 'activity' | 'nutrition' | null) => void;
-  onSubmit: (images: string[]) => void;
+  onSubmit: (images: string[], activityTypeId?: string) => void;
 }
 const CheckInSection: React.FC<CheckInSectionProps> = ({
   checkInType,

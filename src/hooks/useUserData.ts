@@ -32,6 +32,13 @@ export type CheckInRecord = {
   image_url?: string | null;
 };
 
+// Tipo para pontos por atividade específica
+export type ActivityTypePoints = {
+  activity_type_id: string;
+  activity_name: string; 
+  points: number;
+};
+
 // Buscar perfil do usuário
 export const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
   const { data, error } = await supabase
@@ -214,6 +221,29 @@ const createDefaultWeeklyActivity = (
   }
   
   return weeklyActivity;
+};
+
+// Buscar pontos por tipo de atividade
+export const fetchActivityTypePoints = async (userId: string): Promise<ActivityTypePoints[]> => {
+  const { data, error } = await supabase
+    .from('user_activity_points')
+    .select(`
+      activity_type_id,
+      points,
+      activity_types(name)
+    `)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error("Erro ao buscar pontos por tipo de atividade:", error);
+    return [];
+  }
+
+  return (data || []).map(item => ({
+    activity_type_id: item.activity_type_id,
+    activity_name: item.activity_types?.name || 'Desconhecido',
+    points: item.points
+  }));
 };
 
 // Atualizar pontos do usuário e registrar check-in
@@ -405,8 +435,26 @@ export const useUserData = (userId: string | undefined) => {
     refetchInterval: 1000 * 60 * 5, // Atualiza a cada 5 minutos
   });
 
+  const {
+    data: activityTypePoints,
+    isLoading: activityTypePointsLoading,
+    error: activityTypePointsError
+  } = useQuery({
+    queryKey: ['activityTypePoints', userId],
+    queryFn: () => userId ? fetchActivityTypePoints(userId) : Promise.reject('Usuário não autenticado'),
+    enabled: !!userId
+  });
+
   const updatePointsMutation = useMutation({
-    mutationFn: async ({ type, imageUrl }: { type: 'activity' | 'nutrition', imageUrl?: string }) => {
+    mutationFn: async ({ 
+      type, 
+      imageUrl, 
+      activityTypeId 
+    }: { 
+      type: 'activity' | 'nutrition', 
+      imageUrl?: string,
+      activityTypeId?: string
+    }) => {
       if (!userId || !userProfile) {
         throw new Error('Usuário não autenticado ou perfil não carregado');
       }
@@ -416,12 +464,13 @@ export const useUserData = (userId: string | undefined) => {
         throw new Error(`Você já fez check-in de ${type === 'activity' ? 'atividade' : 'alimentação'} hoje`);
       }
       
-      return updateUserPoints(userId, type, userProfile, imageUrl);
+      return updateUserPoints(userId, type, userProfile, imageUrl, activityTypeId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
       queryClient.invalidateQueries({ queryKey: ['weeklyActivity', userId] });
       queryClient.invalidateQueries({ queryKey: ['userCheckIns', userId] });
+      queryClient.invalidateQueries({ queryKey: ['activityTypePoints', userId] });
       toast.success('Check-in realizado com sucesso!');
     },
     onError: (error: any) => {
@@ -430,11 +479,15 @@ export const useUserData = (userId: string | undefined) => {
     }
   });
 
-  const handleCheckInSubmit = (images: string[]) => {
+  const handleCheckInSubmit = (images: string[], activityTypeId?: string) => {
     if (!checkInType) return;
     
     const imageUrl = images.length > 0 ? images[0] : undefined;
-    updatePointsMutation.mutate({ type: checkInType, imageUrl });
+    updatePointsMutation.mutate({ 
+      type: checkInType, 
+      imageUrl,
+      activityTypeId 
+    });
     setCheckInType(null);
   };
 
@@ -448,6 +501,9 @@ export const useUserData = (userId: string | undefined) => {
     weeklyActivity,
     weeklyActivityLoading,
     weeklyActivityError,
+    activityTypePoints,
+    activityTypePointsLoading,
+    activityTypePointsError,
     checkInType,
     setCheckInType,
     handleCheckInSubmit,
