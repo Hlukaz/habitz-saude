@@ -4,16 +4,7 @@ import { Trophy, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import AchievementsDialog from '@/components/AchievementsDialog';
-
-export type Achievement = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  required_points: number;
-  unlocked: boolean;
-  unlocked_at?: string;
-};
+import { Achievement } from '@/types/activityTypes';
 
 interface AchievementsListProps {
   achievements: Achievement[];
@@ -56,9 +47,20 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
               return (
                 <div
                   key={achievement.id}
-                  className="bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center"
+                  className={cn(
+                    "bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center",
+                    achievement.tier === 'gold' && "border-2 border-yellow-400",
+                    achievement.tier === 'silver' && "border-2 border-gray-400",
+                    achievement.tier === 'bronze' && "border-2 border-amber-700"
+                  )}
                 >
-                  <div className="w-12 h-12 rounded-full bg-levelup-accent text-white flex items-center justify-center mb-2">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center mb-2",
+                    achievement.tier === 'gold' && "bg-yellow-400 text-white",
+                    achievement.tier === 'silver' && "bg-gray-400 text-white",
+                    achievement.tier === 'bronze' && "bg-amber-700 text-white",
+                    !achievement.tier && "bg-levelup-accent text-white"
+                  )}>
                     <IconComponent className="w-6 h-6" />
                   </div>
                   <h3 className="font-medium text-sm mb-1">{achievement.name}</h3>
@@ -88,10 +90,25 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
               return (
                 <div
                   key={achievement.id}
-                  className="bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center opacity-70"
+                  className={cn(
+                    "bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center opacity-70",
+                    achievement.tier === 'gold' && "border border-yellow-400",
+                    achievement.tier === 'silver' && "border border-gray-400",
+                    achievement.tier === 'bronze' && "border border-amber-700"
+                  )}
                 >
-                  <div className="w-12 h-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mb-2">
-                    <IconComponent className="w-6 h-6" />
+                  <div className={cn(
+                    "w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2",
+                    achievement.tier === 'gold' && "bg-yellow-100",
+                    achievement.tier === 'silver' && "bg-gray-100",
+                    achievement.tier === 'bronze' && "bg-amber-100"
+                  )}>
+                    <IconComponent className={cn(
+                      "w-6 h-6 text-muted-foreground",
+                      achievement.tier === 'gold' && "text-yellow-400",
+                      achievement.tier === 'silver' && "text-gray-400",
+                      achievement.tier === 'bronze' && "text-amber-700"
+                    )} />
                   </div>
                   <h3 className="font-medium text-sm mb-1">{achievement.name}</h3>
                   <p className="text-xs text-muted-foreground">{achievement.description}</p>
@@ -102,7 +119,13 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
                     </div>
                     <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
                       <div 
-                        className="bg-levelup-accent h-full rounded-full"
+                        className={cn(
+                          "h-full rounded-full",
+                          achievement.tier === 'gold' && "bg-yellow-400",
+                          achievement.tier === 'silver' && "bg-gray-400",
+                          achievement.tier === 'bronze' && "bg-amber-700",
+                          !achievement.tier && "bg-levelup-accent"
+                        )}
                         style={{ width: `${progress}%` }}
                       />
                     </div>

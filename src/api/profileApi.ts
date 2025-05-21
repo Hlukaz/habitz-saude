@@ -83,9 +83,9 @@ export const updateUserPoints = async (
     throw error;
   }
 
-  // After updating points, check for achievements
+  // After updating points, check for achievements using the database function
   if (type === 'activity' && activityTypeId) {
-    await checkActivityAchievements(userId, activityTypeId);
+    await checkActivityAchievementsDb(userId, activityTypeId);
   }
 
   return {
@@ -131,60 +131,21 @@ export const checkIfCheckedInToday = async (
   return (data && data.length > 0);
 };
 
-// Check activity achievements
-export const checkActivityAchievements = async (userId: string, activityTypeId: string) => {
-  // Get all achievements for this activity type that the user hasn't unlocked yet
-  const { data: availableAchievements, error: achievementsError } = await supabase
-    .from('achievements')
-    .select(`
-      id,
-      name,
-      required_points,
-      xp_points,
-      achievement_activities!inner(activity_type_id)
-    `)
-    .eq('achievement_activities.activity_type_id', activityTypeId)
-    .not('id', 'in', (
-      await supabase
-        .from('user_achievements')
-        .select('achievement_id')
-        .eq('user_id', userId)
-    ).data?.map(ua => ua.achievement_id) || [])
-    .order('required_points');
+// Invoca a função de banco de dados para verificar conquistas
+export const checkActivityAchievementsDb = async (userId: string, activityTypeId: string) => {
+  try {
+    // Chamar a função no banco de dados que verificará as conquistas
+    const { data, error } = await supabase.rpc('check_activity_achievements', {
+      user_id_param: userId,
+      activity_type_id_param: activityTypeId
+    });
 
-  if (achievementsError) {
-    console.error('Error checking achievements:', achievementsError);
-    return;
-  }
-
-  // Count activities of this type
-  const { count } = await supabase
-    .from('user_checkins')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('activity_type_id', activityTypeId);
-
-  if (!count) return;
-
-  // Check which achievements should be unlocked
-  const achievementsToUnlock = availableAchievements?.filter(
-    achievement => count >= achievement.required_points
-  ) || [];
-
-  // Unlock achievements
-  for (const achievement of achievementsToUnlock) {
-    const { error: unlockError } = await supabase
-      .from('user_achievements')
-      .insert({
-        user_id: userId,
-        achievement_id: achievement.id
-      });
-
-    if (unlockError) {
-      console.error('Error unlocking achievement:', unlockError);
-      continue;
+    if (error) {
+      console.error('Erro ao verificar conquistas:', error);
     }
-
-    // We'll import the toast in the hook to avoid circular dependencies
+    
+    return data;
+  } catch (error) {
+    console.error('Erro na verificação de conquistas:', error);
   }
 };

@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserProfile } from '@/types/userProfile';
+import { Achievement } from '@/types/activityTypes';
 
 // Function to fetch all user profiles
 export const fetchProfiles = async (): Promise<UserProfile[]> => {
@@ -66,9 +68,10 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
-// Function to fetch user achievements
-export const fetchUserAchievements = async (userId: string) => {
-  const { data, error } = await supabase
+// Function to fetch user achievements with new fields
+export const fetchUserAchievements = async (userId: string): Promise<Achievement[]> => {
+  // Primeiro buscamos conquistas que o usuário já desbloqueou
+  const { data: unlockedData, error: unlockedError } = await supabase
     .from('user_achievements')
     .select(`
       id,
@@ -78,20 +81,61 @@ export const fetchUserAchievements = async (userId: string) => {
         name,
         description,
         icon,
-        required_points
+        required_points,
+        tier,
+        category,
+        is_generic
       )
     `)
     .eq('user_id', userId);
 
-  if (error) {
-    throw error;
+  if (unlockedError) {
+    throw unlockedError;
   }
 
-  return data.map((item: any) => ({
-    id: item.id,
-    unlocked_at: item.unlocked_at,
-    ...item.achievement
+  // Depois buscamos todas as conquistas disponíveis para mostrar também as bloqueadas
+  const { data: allAchievements, error: allError } = await supabase
+    .from('achievements')
+    .select('*');
+
+  if (allError) {
+    throw allError;
+  }
+
+  // Mapeamos as conquistas desbloqueadas
+  const unlockedAchievements = unlockedData.map((item: any) => ({
+    id: item.achievement.id,
+    name: item.achievement.name,
+    description: item.achievement.description,
+    icon: item.achievement.icon,
+    required_points: item.achievement.required_points,
+    tier: item.achievement.tier || 'bronze',
+    category: item.achievement.category || 'general',
+    is_generic: item.achievement.is_generic || true,
+    unlocked: true,
+    unlocked_at: item.unlocked_at
   }));
+
+  // Criamos uma lista de IDs de conquistas já desbloqueadas
+  const unlockedIds = unlockedAchievements.map(a => a.id);
+
+  // Adicionamos as conquistas que ainda não foram desbloqueadas
+  const lockedAchievements = allAchievements
+    .filter((a: any) => !unlockedIds.includes(a.id))
+    .map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      icon: a.icon,
+      required_points: a.required_points,
+      tier: a.tier || 'bronze',
+      category: a.category || 'general',
+      is_generic: a.is_generic || true,
+      unlocked: false
+    }));
+
+  // Combinamos as duas listas
+  return [...unlockedAchievements, ...lockedAchievements];
 };
 
 // Custom hook for user profile data

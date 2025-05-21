@@ -47,30 +47,39 @@ export type Database = {
       }
       achievements: {
         Row: {
+          category: string | null
           created_at: string | null
           description: string
           icon: string
           id: string
+          is_generic: boolean | null
           name: string
           required_points: number
+          tier: string | null
           xp_points: number
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           description: string
           icon: string
           id?: string
+          is_generic?: boolean | null
           name: string
           required_points?: number
+          tier?: string | null
           xp_points?: number
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           description?: string
           icon?: string
           id?: string
+          is_generic?: boolean | null
           name?: string
           required_points?: number
+          tier?: string | null
           xp_points?: number
         }
         Relationships: []
@@ -425,7 +434,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_activity_achievements: {
+        Args: { user_id_param: string; activity_type_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

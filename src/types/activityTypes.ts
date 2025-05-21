@@ -29,3 +29,16 @@ export type FriendRank = {
   positionChange: 'up' | 'down' | 'same';
   avatarUrl: string;
 };
+
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  required_points: number;
+  unlocked: boolean;
+  unlocked_at?: string;
+  tier?: 'bronze' | 'silver' | 'gold';
+  category?: 'general' | 'activity' | 'nutrition' | 'streak';
+  is_generic?: boolean;
+};
