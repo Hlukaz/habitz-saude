@@ -5,22 +5,13 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import AchievementsDialog from '@/components/AchievementsDialog';
 import { Achievement } from '@/types/activityTypes';
+import { getIconComponent } from '@/components/achievements/achievementUtils';
 
 interface AchievementsListProps {
   achievements: Achievement[];
   totalPoints: number;
   className?: string;
 }
-
-const getIconComponent = (iconName: string) => {
-  // Podemos adicionar mais ícones conforme necessário
-  switch (iconName) {
-    case 'trophy': return Trophy;
-    case 'award': return Trophy;
-    case 'award-star': return Trophy;
-    default: return Trophy;
-  }
-};
 
 const AchievementsList = ({ achievements, totalPoints, className }: AchievementsListProps) => {
   // Agrupar conquistas por status (desbloqueadas/bloqueadas)
