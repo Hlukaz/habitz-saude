@@ -12,9 +12,9 @@ export const CATEGORY_LABELS: Record<AchievementCategoryType, string> = {
 };
 
 export const CATEGORY_ICONS: Record<AchievementCategoryType, React.ReactNode> = {
-  physical: <Activity className="h-5 w-5" />,
-  nutrition: <Apple className="h-5 w-5" />,
-  streak: <Flame className="h-5 w-5" />
+  physical: React.createElement(Activity, { className: "h-5 w-5" }),
+  nutrition: React.createElement(Apple, { className: "h-5 w-5" }),
+  streak: React.createElement(Flame, { className: "h-5 w-5" })
 };
 
 export const getIconComponent = (iconName: string) => {
