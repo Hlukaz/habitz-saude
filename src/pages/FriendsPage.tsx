@@ -1,456 +1,34 @@
 
 import React, { useState } from 'react';
-import { Search, UserPlus, Check, X, Share2, Trash2, Copy, Mail } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { Search, Share2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-// Type definitions for friend requests and friends
-interface FriendRequest {
-  id: string;
-  name: string;
-  userId: string;
-  avatarUrl: string | null;
-}
-
-interface Friend {
-  id: string;
-  userId: string;
-  name: string;
-  weeklyPoints: number;
-  avatarUrl: string | null;
-}
-
-// Function to fetch friend requests
-const fetchFriendRequests = async (userId: string): Promise<FriendRequest[]> => {
-  const { data, error } = await supabase
-    .from('friend_requests')
-    .select(`
-      id,
-      sender_id,
-      receiver_id
-    `)
-    .eq('receiver_id', userId)
-    .eq('status', 'pending');
-    
-  if (error) throw error;
-  
-  // Now fetch the sender details for each request
-  const requests: FriendRequest[] = [];
-  
-  for (const request of data) {
-    const { data: senderData, error: senderError } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, avatar_url')
-      .eq('id', request.sender_id)
-      .single();
-      
-    if (senderError) continue;
-    
-    requests.push({
-      id: request.id,
-      name: senderData.full_name || senderData.username,
-      userId: senderData.id,
-      avatarUrl: senderData.avatar_url
-    });
-  }
-  
-  return requests;
-};
-
-// Function to fetch friends
-const fetchFriends = async (userId: string): Promise<Friend[]> => {
-  const { data, error } = await supabase
-    .from('friendships')
-    .select(`
-      id,
-      friend_id
-    `)
-    .eq('user_id', userId);
-    
-  if (error) throw error;
-  
-  // Now fetch the friend details for each friendship
-  const friends: Friend[] = [];
-  
-  for (const friendship of data) {
-    const { data: friendData, error: friendError } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, avatar_url')
-      .eq('id', friendship.friend_id)
-      .single();
-      
-    if (friendError) continue;
-    
-    // Buscar pontos semanais da atividade
-    const { data: activityPoints, error: activityError } = await supabase
-      .from('user_activity_points')
-      .select('points')
-      .eq('user_id', friendship.friend_id);
-    
-    // Calcular pontos totais da semana
-    let weeklyPoints = 0;
-    if (!activityError && activityPoints) {
-      weeklyPoints = activityPoints.reduce((total, item) => total + (item.points || 0), 0);
-    }
-    
-    friends.push({
-      id: friendship.id,
-      userId: friendData.id,
-      name: friendData.full_name || friendData.username,
-      weeklyPoints,
-      avatarUrl: friendData.avatar_url
-    });
-  }
-  
-  return friends;
-};
-
-// Função para buscar um usuário por email ou username
-const searchUser = async (query: string): Promise<any> => {
-  if (!query || query.length < 3) return null;
-  
-  // Buscar por email ou username
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, full_name, avatar_url, email')
-    .or(`username.ilike.%${query}%,email.ilike.%${query}%`)
-    .limit(5);
-    
-  if (error) throw error;
-  return data;
-};
-
-// Função para enviar email de convite
-const sendFriendRequestEmail = async (receiverId: string, requestId: string, senderName: string) => {
-  const appUrl = window.location.origin;
-  
-  const response = await fetch(`${window.location.origin}/functions/v1/send-friend-request-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
-    },
-    body: JSON.stringify({
-      receiverId,
-      requestId,
-      senderName,
-      appUrl
-    })
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Erro ao enviar e-mail de convite');
-  }
-  
-  return await response.json();
-};
+import AddFriendDialog from '@/components/friends/AddFriendDialog';
+import FriendsList from '@/components/friends/FriendsList';
+import FriendRequestsList from '@/components/friends/FriendRequestsList';
+import ShareInviteDialog from '@/components/friends/ShareInviteDialog';
+import { useFriends } from '@/hooks/useFriends';
 
 const FriendsPage = () => {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const queryClient = useQueryClient();
-  const [shareUrl, setShareUrl] = useState('');
-  const [addUserQuery, setAddUserQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const {
+    friends,
+    friendRequests,
+    isLoadingFriends,
+    isLoadingRequests,
+    acceptRequestMutation,
+    rejectRequestMutation,
+    removeFriendMutation,
+    sendRequestMutation,
+    handleSearch,
+    shareViaWhatsApp,
+    shareUrl,
+    inviteDialogOpen,
+    setInviteDialogOpen,
+  } = useFriends();
 
-  const { data: friendRequests = [], isLoading: isLoadingRequests } = useQuery({
-    queryKey: ['friendRequests', user?.id],
-    queryFn: () => user?.id ? fetchFriendRequests(user.id) : Promise.resolve([]),
-    enabled: !!user?.id
-  });
-
-  const { data: friends = [], isLoading: isLoadingFriends } = useQuery({
-    queryKey: ['friends', user?.id],
-    queryFn: () => user?.id ? fetchFriends(user.id) : Promise.resolve([]),
-    enabled: !!user?.id
-  });
-
-  // Accept friend request mutation
-  const acceptRequestMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      // First, update the request status to 'accepted'
-      const { data: requestData, error: requestUpdateError } = await supabase
-        .from('friend_requests')
-        .update({ status: 'accepted' })
-        .eq('id', requestId)
-        .select('sender_id, receiver_id')
-        .single();
-      
-      if (requestUpdateError) throw requestUpdateError;
-      
-      if (!requestData) throw new Error('Request not found');
-      
-      // Create friendship entries for both users
-      const { error: error1 } = await supabase
-        .from('friendships')
-        .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
-      
-      if (error1) throw error1;
-      
-      const { error: error2 } = await supabase
-        .from('friendships')
-        .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
-      
-      if (error2) throw error2;
-      
-      return requestId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friendRequests', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
-      toast.success('Solicitação de amizade aceita!');
-    },
-    onError: (error) => {
-      console.error('Error accepting friend request:', error);
-      toast.error('Erro ao aceitar solicitação. Tente novamente.');
-    }
-  });
-
-  // Reject friend request mutation
-  const rejectRequestMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      const { error } = await supabase
-        .from('friend_requests')
-        .update({ status: 'rejected' })
-        .eq('id', requestId);
-      
-      if (error) throw error;
-      return requestId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friendRequests', user?.id] });
-      toast.success('Solicitação rejeitada');
-    },
-    onError: (error) => {
-      console.error('Error rejecting friend request:', error);
-      toast.error('Erro ao rejeitar solicitação. Tente novamente.');
-    }
-  });
-
-  // Remove friend mutation
-  const removeFriendMutation = useMutation({
-    mutationFn: async (params: { friendshipId: string, friendId: string }) => {
-      // Delete the friendship entry
-      const { error: error1 } = await supabase
-        .from('friendships')
-        .delete()
-        .eq('id', params.friendshipId);
-      
-      if (error1) throw error1;
-      
-      // Find and delete the reverse friendship entry
-      const { data: reverseFriendship, error: findError } = await supabase
-        .from('friendships')
-        .select('id')
-        .eq('user_id', params.friendId)
-        .eq('friend_id', user?.id)
-        .single();
-      
-      if (!findError && reverseFriendship) {
-        const { error: error2 } = await supabase
-          .from('friendships')
-          .delete()
-          .eq('id', reverseFriendship.id);
-        
-        if (error2) throw error2;
-      }
-      
-      return params.friendshipId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
-      toast.success('Amigo removido da lista');
-    },
-    onError: (error) => {
-      console.error('Error removing friend:', error);
-      toast.error('Erro ao remover amigo. Tente novamente.');
-    }
-  });
-
-  // Send friend request mutation
-  const sendRequestMutation = useMutation({
-    mutationFn: async (friendId: string) => {
-      if (!user?.id) throw new Error('Usuário não autenticado');
-      
-      // Verificar se já existe um pedido pendente
-      const { data: existingRequest, error: checkError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('sender_id', user.id)
-        .eq('receiver_id', friendId)
-        .eq('status', 'pending');
-      
-      if (checkError) throw checkError;
-      
-      if (existingRequest && existingRequest.length > 0) {
-        throw new Error('Você já enviou uma solicitação para este usuário');
-      }
-      
-      // Verificar se já são amigos
-      const { data: existingFriendship, error: friendshipError } = await supabase
-        .from('friendships')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('friend_id', friendId);
-      
-      if (friendshipError) throw friendshipError;
-      
-      if (existingFriendship && existingFriendship.length > 0) {
-        throw new Error('Vocês já são amigos');
-      }
-      
-      // Criar pedido de amizade
-      const { data: requestData, error } = await supabase
-        .from('friend_requests')
-        .insert({ sender_id: user.id, receiver_id: friendId })
-        .select()
-        .single();
-      
-      if (error) throw error;
-
-      // Buscar dados do perfil para enviar email
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, username')
-        .eq('id', user.id)
-        .single();
-      
-      const senderName = profile?.full_name || profile?.username || 'Um usuário';
-      
-      // Enviar email de convite
-      try {
-        await sendFriendRequestEmail(friendId, requestData.id, senderName);
-      } catch (emailError) {
-        console.error('Erro ao enviar email:', emailError);
-        // Não falha o processo se o email falhar
-      }
-      
-      return requestData;
-    },
-    onSuccess: (data) => {
-      // Gerar URL para compartilhar
-      const baseUrl = window.location.origin;
-      const inviteLink = `${baseUrl}/confirm-friend?requestId=${data.id}`;
-      setShareUrl(inviteLink);
-      
-      toast.success('Solicitação de amizade enviada!');
-      setAddUserQuery('');
-      setSearchResults([]);
-      setSelectedUser(null);
-    },
-    onError: (error: any) => {
-      console.error('Erro ao enviar solicitação:', error);
-      toast.error(error.message || 'Erro ao enviar solicitação de amizade');
-    }
-  });
-
-  // Handle user search
-  const handleSearch = async (query: string) => {
-    setAddUserQuery(query);
-    
-    if (query.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-    
-    try {
-      setIsSearching(true);
-      const results = await searchUser(query);
-      if (results) {
-        // Remover o usuário atual da lista
-        setSearchResults(results.filter((result: any) => result.id !== user?.id));
-      }
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-      toast.error('Erro ao buscar usuários');
-    } finally {
-      setIsSearching(false);
-    }
+  const handleSendRequest = async (userId: string) => {
+    await sendRequestMutation.mutateAsync(userId);
   };
-
-  // Selecionar usuário para enviar solicitação
-  const handleSelectUser = (userResult: any) => {
-    setSelectedUser(userResult);
-    setAddUserQuery(userResult.username || userResult.email);
-    setSearchResults([]);
-  };
-
-  // Criar pedido de amizade
-  const handleSendRequest = async () => {
-    if (!selectedUser) return;
-    try {
-      await sendRequestMutation.mutateAsync(selectedUser.id);
-      setInviteDialogOpen(true);
-    } catch (error: any) {
-      console.error('Erro ao enviar solicitação:', error);
-    }
-  };
-
-  // Copiar link de convite
-  const handleCopyLink = () => {
-    if (!shareUrl) return;
-    
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => toast.success('Link copiado para a área de transferência!'))
-      .catch(() => toast.error('Falha ao copiar link'));
-  };
-
-  // Generate invite link
-  const generateInviteLink = () => {
-    if (!user?.id) return;
-    
-    const baseUrl = window.location.origin;
-    const inviteLink = `${baseUrl}/invite?id=${user.id}`;
-    setShareUrl(inviteLink);
-    return inviteLink;
-  };
-
-  // Share invite link via WhatsApp
-  const shareViaWhatsApp = () => {
-    const inviteLink = generateInviteLink();
-    if (!inviteLink) return;
-    
-    const whatsappUrl = `https://wa.me/?text=Olá! Estou te convidando para ser meu amigo no Habitz. Clique no link para aceitar: ${encodeURIComponent(inviteLink)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  // Filter friends by search term
-  const filteredFriends = friends.filter(friend => 
-    friend.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="pb-20">
@@ -470,124 +48,24 @@ const FriendsPage = () => {
       </header>
       
       {/* Friend Requests */}
-      {friendRequests.length > 0 && (
-        <div className="px-4 mb-5">
-          <h2 className="text-lg font-bold mb-3">Solicitações de Amizade</h2>
-          <div className="space-y-3">
-            {friendRequests.map(request => (
-              <div key={request.id} className="bg-card p-3 rounded-lg shadow-sm flex items-center">
-                <img
-                  src={request.avatarUrl || 'https://source.unsplash.com/random/100x100/?person'}
-                  alt={request.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div className="ml-3 flex-1">
-                  <p className="font-medium">{request.name}</p>
-                  <p className="text-sm text-muted-foreground">Quer ser seu amigo</p>
-                </div>
-                <div className="flex">
-                  <button 
-                    className="w-10 h-10 rounded-full bg-levelup-success text-white flex items-center justify-center mr-2"
-                    onClick={() => acceptRequestMutation.mutate(request.id)}
-                    disabled={acceptRequestMutation.isPending}
-                  >
-                    <Check className="w-5 h-5" />
-                  </button>
-                  <button 
-                    className="w-10 h-10 rounded-full bg-levelup-danger text-white flex items-center justify-center"
-                    onClick={() => rejectRequestMutation.mutate(request.id)}
-                    disabled={rejectRequestMutation.isPending}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="px-4">
+        <FriendRequestsList 
+          requests={friendRequests} 
+          onAccept={(requestId) => acceptRequestMutation.mutate(requestId)}
+          onReject={(requestId) => rejectRequestMutation.mutate(requestId)}
+          acceptPending={acceptRequestMutation.isPending}
+          rejectPending={rejectRequestMutation.isPending}
+        />
+      </div>
       
       {/* Add Friends */}
       <div className="px-4 mb-5">
         <div className="mb-3">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full py-3 bg-levelup-primary text-white rounded-lg flex items-center justify-center font-medium">
-                <UserPlus className="w-5 h-5 mr-2" />
-                Adicionar Amigo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-full max-w-md">
-              <DialogHeader>
-                <DialogTitle>Adicionar Amigo</DialogTitle>
-                <DialogDescription>
-                  Busque por um amigo pelo nome de usuário ou e-mail.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="mt-4 space-y-4">
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Buscar por usuário ou email..."
-                    value={addUserQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full pl-4 pr-8 py-2"
-                  />
-                  {isSearching && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                
-                {searchResults.length > 0 && (
-                  <div className="border rounded-md overflow-hidden">
-                    {searchResults.map((result) => (
-                      <div
-                        key={result.id}
-                        className="p-3 hover:bg-muted cursor-pointer flex items-center"
-                        onClick={() => handleSelectUser(result)}
-                      >
-                        <img
-                          src={result.avatar_url || 'https://source.unsplash.com/random/100x100/?person'}
-                          alt={result.username || result.email}
-                          className="w-10 h-10 rounded-full object-cover mr-3"
-                        />
-                        <div>
-                          <p className="font-medium">{result.full_name || result.username}</p>
-                          <p className="text-sm text-muted-foreground">{result.username || result.email}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {searchResults.length === 0 && addUserQuery.length >= 3 && !isSearching && (
-                  <div className="text-center p-4 text-muted-foreground">
-                    Nenhum usuário encontrado
-                  </div>
-                )}
-                
-                <div className="flex justify-end gap-2">
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancelar</Button>
-                  </DialogClose>
-                  <Button 
-                    onClick={handleSendRequest}
-                    disabled={!selectedUser || sendRequestMutation.isPending}
-                  >
-                    {sendRequestMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <UserPlus className="h-4 w-4 mr-2" />
-                    )}
-                    Enviar Solicitação
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <AddFriendDialog
+            onSendRequest={handleSendRequest}
+            onSearch={handleSearch}
+            isPending={sendRequestMutation.isPending}
+          />
         </div>
         
         <button 
@@ -600,101 +78,21 @@ const FriendsPage = () => {
       </div>
       
       {/* Link de convite dialog */}
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent className="w-full max-w-md">
-          <DialogHeader>
-            <DialogTitle>Solicitação Enviada!</DialogTitle>
-            <DialogDescription>
-              Sua solicitação de amizade foi enviada com sucesso. Você também pode compartilhar o link direto para aceitar a solicitação.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center space-x-2">
-              <Input
-                type="text"
-                value={shareUrl}
-                readOnly
-                className="flex-1"
-              />
-              <Button size="icon" variant="outline" onClick={handleCopyLink}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="flex justify-end">
-              <DialogClose asChild>
-                <Button>Fechar</Button>
-              </DialogClose>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ShareInviteDialog 
+        shareUrl={shareUrl}
+        isOpen={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+      />
       
       {/* Friends List */}
       <div className="px-4">
-        <h2 className="text-lg font-bold mb-3">Seus Amigos</h2>
-        {isLoadingFriends ? (
-          <div className="flex justify-center py-8">
-            <p>Carregando amigos...</p>
-          </div>
-        ) : filteredFriends.length > 0 ? (
-          <div className="space-y-3">
-            {filteredFriends.map(friend => (
-              <div 
-                key={friend.id}
-                className="bg-card p-3 rounded-lg shadow-sm flex items-center hover:shadow-md transition-shadow"
-              >
-                <img
-                  src={friend.avatarUrl || 'https://source.unsplash.com/random/100x100/?person'}
-                  alt={friend.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div className="ml-3 flex-1">
-                  <p className="font-medium">{friend.name}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-end mr-2">
-                    <span className="font-bold text-levelup-primary">{friend.weeklyPoints}</span>
-                    <span className="text-xs text-muted-foreground">pontos esta semana</span>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-levelup-danger">
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remover amigo</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja remover {friend.name} da sua lista de amigos?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => removeFriendMutation.mutate({ 
-                            friendshipId: friend.id, 
-                            friendId: friend.userId 
-                          })}
-                          className="bg-levelup-danger hover:bg-levelup-danger/90"
-                        >
-                          Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Você ainda não tem amigos na sua lista.</p>
-            <p className="mt-2">Convide alguém usando o botão acima!</p>
-          </div>
-        )}
+        <FriendsList 
+          friends={friends} 
+          isLoading={isLoadingFriends}
+          searchTerm={searchTerm}
+          onRemoveFriend={(params) => removeFriendMutation.mutate(params)}
+          removeFriendMutationIsPending={removeFriendMutation.isPending}
+        />
       </div>
     </div>
   );
