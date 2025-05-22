@@ -14,6 +14,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import InvitePage from "./pages/InvitePage";
+import ConfirmFriendPage from "./pages/ConfirmFriendPage";
 import { AuthProvider } from "./context/AuthContext";
 import RequireAuth from "./components/RequireAuth";
 
@@ -32,6 +33,7 @@ const App = () => {
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/invite" element={<InvitePage />} />
+                <Route path="/confirm-friend" element={<ConfirmFriendPage />} />
                 <Route element={<RequireAuth />}>
                   <Route path="/" element={<MainLayout />}>
                     <Route index element={<HomePage />} />

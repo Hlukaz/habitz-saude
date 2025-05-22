@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Search, UserPlus, Check, X, Share2, Trash2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Share2, Trash2, Copy, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -29,7 +45,6 @@ interface Friend {
   id: string;
   userId: string;
   name: string;
-  totalPoints: number;
   weeklyPoints: number;
   avatarUrl: string | null;
 }
@@ -89,18 +104,29 @@ const fetchFriends = async (userId: string): Promise<Friend[]> => {
   for (const friendship of data) {
     const { data: friendData, error: friendError } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, total_points, activity_points, nutrition_points')
+      .select('id, username, full_name, avatar_url')
       .eq('id', friendship.friend_id)
       .single();
       
     if (friendError) continue;
     
+    // Buscar pontos semanais da atividade
+    const { data: activityPoints, error: activityError } = await supabase
+      .from('user_activity_points')
+      .select('points')
+      .eq('user_id', friendship.friend_id);
+    
+    // Calcular pontos totais da semana
+    let weeklyPoints = 0;
+    if (!activityError && activityPoints) {
+      weeklyPoints = activityPoints.reduce((total, item) => total + (item.points || 0), 0);
+    }
+    
     friends.push({
       id: friendship.id,
       userId: friendData.id,
       name: friendData.full_name || friendData.username,
-      totalPoints: friendData.total_points || 0,
-      weeklyPoints: (friendData.activity_points || 0) + (friendData.nutrition_points || 0),
+      weeklyPoints,
       avatarUrl: friendData.avatar_url
     });
   }
@@ -108,11 +134,57 @@ const fetchFriends = async (userId: string): Promise<Friend[]> => {
   return friends;
 };
 
+// Função para buscar um usuário por email ou username
+const searchUser = async (query: string): Promise<any> => {
+  if (!query || query.length < 3) return null;
+  
+  // Buscar por email ou username
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, full_name, avatar_url, email')
+    .or(`username.ilike.%${query}%,email.ilike.%${query}%`)
+    .limit(5);
+    
+  if (error) throw error;
+  return data;
+};
+
+// Função para enviar email de convite
+const sendFriendRequestEmail = async (receiverId: string, requestId: string, senderName: string) => {
+  const appUrl = window.location.origin;
+  
+  const response = await fetch(`${window.location.origin}/functions/v1/send-friend-request-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+    },
+    body: JSON.stringify({
+      receiverId,
+      requestId,
+      senderName,
+      appUrl
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Erro ao enviar e-mail de convite');
+  }
+  
+  return await response.json();
+};
+
 const FriendsPage = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const [shareUrl, setShareUrl] = useState('');
+  const [addUserQuery, setAddUserQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const { data: friendRequests = [], isLoading: isLoadingRequests } = useQuery({
     queryKey: ['friendRequests', user?.id],
@@ -228,6 +300,134 @@ const FriendsPage = () => {
     }
   });
 
+  // Send friend request mutation
+  const sendRequestMutation = useMutation({
+    mutationFn: async (friendId: string) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      
+      // Verificar se já existe um pedido pendente
+      const { data: existingRequest, error: checkError } = await supabase
+        .from('friend_requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .eq('receiver_id', friendId)
+        .eq('status', 'pending');
+      
+      if (checkError) throw checkError;
+      
+      if (existingRequest && existingRequest.length > 0) {
+        throw new Error('Você já enviou uma solicitação para este usuário');
+      }
+      
+      // Verificar se já são amigos
+      const { data: existingFriendship, error: friendshipError } = await supabase
+        .from('friendships')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('friend_id', friendId);
+      
+      if (friendshipError) throw friendshipError;
+      
+      if (existingFriendship && existingFriendship.length > 0) {
+        throw new Error('Vocês já são amigos');
+      }
+      
+      // Criar pedido de amizade
+      const { data: requestData, error } = await supabase
+        .from('friend_requests')
+        .insert({ sender_id: user.id, receiver_id: friendId })
+        .select()
+        .single();
+      
+      if (error) throw error;
+
+      // Buscar dados do perfil para enviar email
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single();
+      
+      const senderName = profile?.full_name || profile?.username || 'Um usuário';
+      
+      // Enviar email de convite
+      try {
+        await sendFriendRequestEmail(friendId, requestData.id, senderName);
+      } catch (emailError) {
+        console.error('Erro ao enviar email:', emailError);
+        // Não falha o processo se o email falhar
+      }
+      
+      return requestData;
+    },
+    onSuccess: (data) => {
+      // Gerar URL para compartilhar
+      const baseUrl = window.location.origin;
+      const inviteLink = `${baseUrl}/confirm-friend?requestId=${data.id}`;
+      setShareUrl(inviteLink);
+      
+      toast.success('Solicitação de amizade enviada!');
+      setAddUserQuery('');
+      setSearchResults([]);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao enviar solicitação:', error);
+      toast.error(error.message || 'Erro ao enviar solicitação de amizade');
+    }
+  });
+
+  // Handle user search
+  const handleSearch = async (query: string) => {
+    setAddUserQuery(query);
+    
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    try {
+      setIsSearching(true);
+      const results = await searchUser(query);
+      if (results) {
+        // Remover o usuário atual da lista
+        setSearchResults(results.filter((result: any) => result.id !== user?.id));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      toast.error('Erro ao buscar usuários');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Selecionar usuário para enviar solicitação
+  const handleSelectUser = (userResult: any) => {
+    setSelectedUser(userResult);
+    setAddUserQuery(userResult.username || userResult.email);
+    setSearchResults([]);
+  };
+
+  // Criar pedido de amizade
+  const handleSendRequest = async () => {
+    if (!selectedUser) return;
+    try {
+      await sendRequestMutation.mutateAsync(selectedUser.id);
+      setInviteDialogOpen(true);
+    } catch (error: any) {
+      console.error('Erro ao enviar solicitação:', error);
+    }
+  };
+
+  // Copiar link de convite
+  const handleCopyLink = () => {
+    if (!shareUrl) return;
+    
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => toast.success('Link copiado para a área de transferência!'))
+      .catch(() => toast.error('Falha ao copiar link'));
+  };
+
   // Generate invite link
   const generateInviteLink = () => {
     if (!user?.id) return;
@@ -309,6 +509,87 @@ const FriendsPage = () => {
       
       {/* Add Friends */}
       <div className="px-4 mb-5">
+        <div className="mb-3">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="w-full py-3 bg-levelup-primary text-white rounded-lg flex items-center justify-center font-medium">
+                <UserPlus className="w-5 h-5 mr-2" />
+                Adicionar Amigo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="w-full max-w-md">
+              <DialogHeader>
+                <DialogTitle>Adicionar Amigo</DialogTitle>
+                <DialogDescription>
+                  Busque por um amigo pelo nome de usuário ou e-mail.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="mt-4 space-y-4">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Buscar por usuário ou email..."
+                    value={addUserQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full pl-4 pr-8 py-2"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                
+                {searchResults.length > 0 && (
+                  <div className="border rounded-md overflow-hidden">
+                    {searchResults.map((result) => (
+                      <div
+                        key={result.id}
+                        className="p-3 hover:bg-muted cursor-pointer flex items-center"
+                        onClick={() => handleSelectUser(result)}
+                      >
+                        <img
+                          src={result.avatar_url || 'https://source.unsplash.com/random/100x100/?person'}
+                          alt={result.username || result.email}
+                          className="w-10 h-10 rounded-full object-cover mr-3"
+                        />
+                        <div>
+                          <p className="font-medium">{result.full_name || result.username}</p>
+                          <p className="text-sm text-muted-foreground">{result.username || result.email}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {searchResults.length === 0 && addUserQuery.length >= 3 && !isSearching && (
+                  <div className="text-center p-4 text-muted-foreground">
+                    Nenhum usuário encontrado
+                  </div>
+                )}
+                
+                <div className="flex justify-end gap-2">
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                  </DialogClose>
+                  <Button 
+                    onClick={handleSendRequest}
+                    disabled={!selectedUser || sendRequestMutation.isPending}
+                  >
+                    {sendRequestMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <UserPlus className="h-4 w-4 mr-2" />
+                    )}
+                    Enviar Solicitação
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+        
         <button 
           className="w-full py-3 bg-levelup-secondary text-white rounded-lg flex items-center justify-center font-medium mb-3"
           onClick={shareViaWhatsApp}
@@ -317,6 +598,38 @@ const FriendsPage = () => {
           Convidar Amigos via WhatsApp
         </button>
       </div>
+      
+      {/* Link de convite dialog */}
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitação Enviada!</DialogTitle>
+            <DialogDescription>
+              Sua solicitação de amizade foi enviada com sucesso. Você também pode compartilhar o link direto para aceitar a solicitação.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center space-x-2">
+              <Input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="flex-1"
+              />
+              <Button size="icon" variant="outline" onClick={handleCopyLink}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="flex justify-end">
+              <DialogClose asChild>
+                <Button>Fechar</Button>
+              </DialogClose>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Friends List */}
       <div className="px-4">
@@ -339,9 +652,6 @@ const FriendsPage = () => {
                 />
                 <div className="ml-3 flex-1">
                   <p className="font-medium">{friend.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {friend.totalPoints} pontos no total
-                  </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-end mr-2">

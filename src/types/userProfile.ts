@@ -13,4 +13,5 @@ export type UserProfile = {
   xp: number;
   created_at: string;
   updated_at: string;
+  email: string | null;
 };
