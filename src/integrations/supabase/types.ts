@@ -261,7 +261,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          activity_points: number | null
           avatar_url: string | null
           created_at: string | null
           full_name: string | null
@@ -270,16 +269,13 @@ export type Database = {
           last_block_reset: string | null
           last_streak_update: string | null
           notification_token: string | null
-          nutrition_points: number | null
           streak: number | null
           streak_blocks: number | null
-          total_points: number | null
           updated_at: string | null
           username: string | null
           xp: number
         }
         Insert: {
-          activity_points?: number | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -288,16 +284,13 @@ export type Database = {
           last_block_reset?: string | null
           last_streak_update?: string | null
           notification_token?: string | null
-          nutrition_points?: number | null
           streak?: number | null
           streak_blocks?: number | null
-          total_points?: number | null
           updated_at?: string | null
           username?: string | null
           xp?: number
         }
         Update: {
-          activity_points?: number | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -306,10 +299,8 @@ export type Database = {
           last_block_reset?: string | null
           last_streak_update?: string | null
           notification_token?: string | null
-          nutrition_points?: number | null
           streak?: number | null
           streak_blocks?: number | null
-          total_points?: number | null
           updated_at?: string | null
           username?: string | null
           xp?: number

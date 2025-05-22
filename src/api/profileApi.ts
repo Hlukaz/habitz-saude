@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/userProfile';
 
@@ -19,9 +18,6 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
     username: data.username,
     full_name: data.full_name,
     avatar_url: data.avatar_url,
-    activity_points: data.activity_points || 0,
-    nutrition_points: data.nutrition_points || 0,
-    total_points: data.total_points || 0,
     streak: data.streak || 0,
     streak_blocks: data.streak_blocks || 2,
     last_activity_date: data.last_activity_date,
@@ -56,23 +52,49 @@ export const updateUserPoints = async (
     throw checkInError;
   }
 
-  // Then update the points
-  const newActivityPoints = type === 'activity' 
-    ? currentProfile.activity_points + 1 
-    : currentProfile.activity_points;
-  
-  const newNutritionPoints = type === 'nutrition' 
-    ? currentProfile.nutrition_points + 1 
-    : currentProfile.nutrition_points;
-  
-  const newTotalPoints = newActivityPoints + newNutritionPoints;
+  // Only update the user_activity_points table if it's an activity check-in with a type
+  if (type === 'activity' && activityTypeId) {
+    // Check if there's an existing record for this user and activity type
+    const { data: existingPoints, error: fetchError } = await supabase
+      .from('user_activity_points')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('activity_type_id', activityTypeId)
+      .maybeSingle();
+    
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    if (existingPoints) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('user_activity_points')
+        .update({ points: existingPoints.points + 1 })
+        .eq('id', existingPoints.id);
+        
+      if (updateError) {
+        throw updateError;
+      }
+    } else {
+      // Create new record
+      const { error: insertError } = await supabase
+        .from('user_activity_points')
+        .insert({ 
+          user_id: userId, 
+          activity_type_id: activityTypeId,
+          points: 1 
+        });
+        
+      if (insertError) {
+        throw insertError;
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from('profiles')
     .update({ 
-      activity_points: newActivityPoints,
-      nutrition_points: newNutritionPoints,
-      total_points: newTotalPoints,
       last_activity_date: new Date().toISOString().split('T')[0]
     })
     .eq('id', userId)
@@ -93,9 +115,6 @@ export const updateUserPoints = async (
     username: data.username,
     full_name: data.full_name,
     avatar_url: data.avatar_url,
-    activity_points: data.activity_points || 0,
-    nutrition_points: data.nutrition_points || 0,
-    total_points: data.total_points || 0,
     streak: data.streak || 0,
     streak_blocks: data.streak_blocks || 2,
     last_activity_date: data.last_activity_date,

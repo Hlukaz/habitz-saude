@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ export const useUserData = (userId: string | undefined) => {
   const [checkInType, setCheckInType] = useState<'activity' | 'nutrition' | null>(null);
   const queryClient = useQueryClient();
 
+  // Fetch user profile
   const { 
     data: userProfile, 
     isLoading: profileLoading, 

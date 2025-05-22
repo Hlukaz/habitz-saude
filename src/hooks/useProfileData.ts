@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,9 +20,6 @@ export const fetchProfiles = async (): Promise<UserProfile[]> => {
     username: profile.username,
     full_name: profile.full_name,
     avatar_url: profile.avatar_url,
-    activity_points: profile.activity_points || 0,
-    nutrition_points: profile.nutrition_points || 0,
-    total_points: profile.total_points || 0,
     streak: profile.streak || 0,
     streak_blocks: profile.streak_blocks || 2,
     last_activity_date: profile.last_activity_date,
@@ -53,9 +49,6 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
     username: data.username,
     full_name: data.full_name,
     avatar_url: data.avatar_url,
-    activity_points: data.activity_points || 0,
-    nutrition_points: data.nutrition_points || 0,
-    total_points: data.total_points || 0,
     streak: data.streak || 0,
     streak_blocks: data.streak_blocks || 2,
     last_activity_date: data.last_activity_date,

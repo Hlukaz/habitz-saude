@@ -4,9 +4,6 @@ export type UserProfile = {
   username: string;
   full_name: string;
   avatar_url: string;
-  activity_points: number;
-  nutrition_points: number;
-  total_points: number;
   streak: number;
   streak_blocks: number;
   last_activity_date: string | null;
