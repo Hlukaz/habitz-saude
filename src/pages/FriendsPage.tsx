@@ -77,7 +77,7 @@ const FriendsPage = () => {
         </button>
       </div>
       
-      {/* Link de convite dialog */}
+      {/* Invite link dialog */}
       <ShareInviteDialog 
         shareUrl={shareUrl}
         isOpen={inviteDialogOpen}

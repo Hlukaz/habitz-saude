@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserPlus, Search, Loader } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,26 +12,19 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
-
-interface SearchResult {
-  id: string;
-  username: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-}
+import { SearchUserResult } from '@/types/friendTypes';
 
 interface AddFriendDialogProps {
   onSendRequest: (userId: string) => Promise<void>;
-  onSearch: (query: string) => Promise<SearchResult[]>;
+  onSearch: (query: string) => Promise<SearchUserResult[]>;
   isPending: boolean;
 }
 
 const AddFriendDialog = ({ onSendRequest, onSearch, isPending }: AddFriendDialogProps) => {
   const [addUserQuery, setAddUserQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchUserResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<SearchResult | null>(null);
+  const [selectedUser, setSelectedUser] = useState<SearchUserResult | null>(null);
 
   // Handle user search
   const handleSearch = async (query: string) => {
@@ -56,7 +48,7 @@ const AddFriendDialog = ({ onSendRequest, onSearch, isPending }: AddFriendDialog
   };
 
   // Selecionar usuário para enviar solicitação
-  const handleSelectUser = (userResult: SearchResult) => {
+  const handleSelectUser = (userResult: SearchUserResult) => {
     setSelectedUser(userResult);
     setAddUserQuery(userResult.username || userResult.email || '');
     setSearchResults([]);

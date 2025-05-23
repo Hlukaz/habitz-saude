@@ -13,4 +13,7 @@ export interface UserProfile {
   xp: number;
   created_at: string;
   updated_at: string;
+  activity_points?: number;
+  nutrition_points?: number;
+  total_points?: number;
 }
