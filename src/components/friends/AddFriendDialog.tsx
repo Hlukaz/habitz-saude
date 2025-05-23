@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserPlus, Search, Loader } from 'lucide-react';
 import { toast } from 'sonner';
@@ -50,7 +51,7 @@ const AddFriendDialog = ({ onSendRequest, onSearch, isPending }: AddFriendDialog
   // Selecionar usuário para enviar solicitação
   const handleSelectUser = (userResult: SearchUserResult) => {
     setSelectedUser(userResult);
-    setAddUserQuery(userResult.username || userResult.email || '');
+    setAddUserQuery(userResult.username || userResult.full_name || '');
     setSearchResults([]);
   };
 
@@ -108,12 +109,12 @@ const AddFriendDialog = ({ onSendRequest, onSearch, isPending }: AddFriendDialog
                 >
                   <img
                     src={result.avatar_url || 'https://source.unsplash.com/random/100x100/?person'}
-                    alt={result.username || result.email || ''}
+                    alt={result.username || result.full_name || ''}
                     className="w-10 h-10 rounded-full object-cover mr-3"
                   />
                   <div>
                     <p className="font-medium">{result.full_name || result.username}</p>
-                    <p className="text-sm text-muted-foreground">{result.username || result.email}</p>
+                    <p className="text-sm text-muted-foreground">{result.username}</p>
                   </div>
                 </div>
               ))}

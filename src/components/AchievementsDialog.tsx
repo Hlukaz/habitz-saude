@@ -26,6 +26,16 @@ import { AchievementItem } from '@/components/achievements/AchievementItem';
 import { AchievementCategoryTab } from '@/components/achievements/AchievementCategoryTab';
 import { AchievementCategoryType, CATEGORY_LABELS, CATEGORY_ICONS, getCategoryFromAchievement } from '@/components/achievements/achievementUtils';
 
+// Helper function to map from our UI category to database category
+const mapCategoryToDbCategory = (category: AchievementCategoryType): "activity" | "nutrition" | "general" | "streak" => {
+  switch(category) {
+    case "physical":
+      return "activity";
+    default:
+      return category as "nutrition" | "general" | "streak";
+  }
+};
+
 interface AchievementsDialogProps {
   achievements: Achievement[];
   totalPoints: number;
@@ -37,14 +47,20 @@ const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogPro
   // Combinar conquistas existentes com as pré-definidas
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
-    ...achievements.map(a => ({ ...a, category: getCategoryFromAchievement(a) })),
+    ...achievements.map(a => {
+      const uiCategory = getCategoryFromAchievement(a);
+      return { 
+        ...a, 
+        category: mapCategoryToDbCategory(uiCategory)
+      };
+    }),
   ];
   
   // Separar por categoria
   const achievementsByCategory = {
-    physical: combinedAchievements.filter(a => a.category === 'physical'),
-    nutrition: combinedAchievements.filter(a => a.category === 'nutrition'),
-    streak: combinedAchievements.filter(a => a.category === 'streak'),
+    physical: combinedAchievements.filter(a => a.category === "activity"),
+    nutrition: combinedAchievements.filter(a => a.category === "nutrition"),
+    streak: combinedAchievements.filter(a => a.category === "streak"),
   };
   
   return (
@@ -102,14 +118,20 @@ const AchievementsModalDialog = ({ achievements, totalPoints }: AchievementsDial
   // Combinar conquistas existentes com as pré-definidas
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
-    ...achievements.map(a => ({ ...a, category: getCategoryFromAchievement(a) })),
+    ...achievements.map(a => {
+      const uiCategory = getCategoryFromAchievement(a);
+      return { 
+        ...a, 
+        category: mapCategoryToDbCategory(uiCategory)
+      };
+    }),
   ];
   
   // Separar por categoria
   const achievementsByCategory = {
-    physical: combinedAchievements.filter(a => a.category === 'physical'),
-    nutrition: combinedAchievements.filter(a => a.category === 'nutrition'),
-    streak: combinedAchievements.filter(a => a.category === 'streak'),
+    physical: combinedAchievements.filter(a => a.category === "activity"),
+    nutrition: combinedAchievements.filter(a => a.category === "nutrition"),
+    streak: combinedAchievements.filter(a => a.category === "streak"),
   };
   
   return (

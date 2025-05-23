@@ -22,6 +22,7 @@ export interface SearchUserResult {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  email?: string; // Added email field as optional to fix AddFriendDialog.tsx
 }
 
 export interface InviteShareOptions {
