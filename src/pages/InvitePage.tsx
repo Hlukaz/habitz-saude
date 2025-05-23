@@ -3,35 +3,35 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { UserPlus, ArrowLeft, Loader2, Mail, Key, User } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState as useTabState } from 'react';
+import { toast } from 'sonner';
+
+// Import newly created components
+import InviteDetails from '@/components/invite/InviteDetails';
+import AuthTabs from '@/components/invite/AuthTabs';
 
 const InvitePage = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
   const [inviterDetails, setInviterDetails] = useState<{
     name: string;
     avatarUrl: string | null;
   } | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alreadyFriends, setAlreadyFriends] = useState(false);
   const [alreadyRequested, setAlreadyRequested] = useState(false);
-  const [selectedTab, setSelectedTab] = useTabState('login');
   
-  // Estados para o formulário de registro e login
+  // States for the auth forms
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState('login');
 
   const inviterId = searchParams.get('id');
 
@@ -134,212 +134,7 @@ const InvitePage = () => {
     }
   };
 
-  // Função para login
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    setAuthError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) throw error;
-
-      toast.success('Login realizado com sucesso!');
-      // Após o login bem-sucedido, a página será recarregada e o useEffect
-      // verificará a relação de amizade com o usuário do convite
-    } catch (error: any) {
-      console.error('Erro no login:', error);
-      setAuthError(error.message || 'Falha no login. Verifique suas credenciais.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // Função para registro
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    setAuthError(null);
-
-    if (!username.trim()) {
-      setAuthError('Nome de usuário é obrigatório');
-      setAuthLoading(false);
-      return;
-    }
-
-    try {
-      // Registrar usuário
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-            full_name: username
-          }
-        }
-      });
-
-      if (authError) throw authError;
-      
-      // Se o registro foi bem-sucedido e temos o inviterId, criamos automaticamente a amizade
-      if (authData.user && inviterId) {
-        // Aguardar um momento para o usuário ser criado completamente no Supabase
-        setTimeout(async () => {
-          try {
-            // Criar automaticamente a amizade entre o novo usuário e o convidador
-            const { error: error1 } = await supabase
-              .from('friendships')
-              .insert({ 
-                user_id: authData.user.id, 
-                friend_id: inviterId 
-              });
-              
-            const { error: error2 } = await supabase
-              .from('friendships')
-              .insert({ 
-                user_id: inviterId, 
-                friend_id: authData.user.id 
-              });
-            
-            if (error1 || error2) {
-              console.error('Erro ao criar amizade:', error1 || error2);
-            }
-            
-            toast.success('Conta criada e amizade estabelecida!');
-            navigate('/friends');
-          } catch (err) {
-            console.error('Erro ao criar amizade após registro:', err);
-          }
-        }, 1000); // Aguardar 1 segundo
-      } else {
-        toast.success('Conta criada com sucesso!');
-      }
-    } catch (error: any) {
-      console.error('Erro no registro:', error);
-      setAuthError(error.message || 'Falha ao criar conta.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // Se o usuário não está logado, mostra opções de login/registro
-  const renderAuthOptions = () => {
-    return (
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full max-w-md">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="register">Criar Conta</TabsTrigger>
-        </TabsList>
-        <TabsContent value="login" className="mt-4">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com" 
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="********" 
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-            {authError && <p className="text-destructive text-sm">{authError}</p>}
-            <Button 
-              type="submit" 
-              className="w-full bg-levelup-primary"
-              disabled={authLoading}
-            >
-              {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Entrar
-            </Button>
-          </form>
-        </TabsContent>
-        <TabsContent value="register" className="mt-4">
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="register-username">Nome de Usuário</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  id="register-username" 
-                  type="text" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Seu Nome" 
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  id="register-email" 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com" 
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-password">Senha</Label>
-              <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  id="register-password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="********" 
-                  className="pl-10"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-            {authError && <p className="text-destructive text-sm">{authError}</p>}
-            <Button 
-              type="submit" 
-              className="w-full bg-levelup-primary"
-              disabled={authLoading}
-            >
-              {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Criar Conta
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
-    );
-  };
+  const navigateToFriends = () => navigate('/friends');
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -358,65 +153,36 @@ const InvitePage = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center">
-            <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+            <div className="h-10 w-10 border-4 border-t-transparent border-primary rounded-full animate-spin mb-4"></div>
             <p>Verificando convite...</p>
           </div>
-        ) : error ? (
-          <div className="text-center">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={() => navigate('/friends')}>
-              Voltar para a lista de amigos
-            </Button>
-          </div>
-        ) : alreadyFriends ? (
-          <div className="text-center">
-            <p className="text-lg mb-4">Você e {inviterDetails?.name} já são amigos!</p>
-            <Button onClick={() => navigate('/friends')}>
-              Ver lista de amigos
-            </Button>
-          </div>
-        ) : alreadyRequested ? (
-          <div className="text-center">
-            <p className="text-lg mb-4">Já existe uma solicitação de amizade pendente.</p>
-            <Button onClick={() => navigate('/friends')}>
-              Ver solicitações
-            </Button>
-          </div>
+        ) : user ? (
+          <InviteDetails 
+            inviterName={inviterDetails?.name || ''}
+            inviterAvatarUrl={inviterDetails?.avatarUrl}
+            error={error}
+            alreadyFriends={alreadyFriends}
+            alreadyRequested={alreadyRequested}
+            onActionClick={handleAcceptInvitation}
+            accepting={accepting}
+            navigateToFriends={navigateToFriends}
+          />
         ) : (
-          <div className="text-center w-full max-w-md">
-            <div className="mb-6 flex flex-col items-center">
-              <img
-                src={inviterDetails?.avatarUrl || 'https://source.unsplash.com/random/100x100/?person'}
-                alt={inviterDetails?.name || 'User'}
-                className="w-24 h-24 rounded-full object-cover mb-4"
-              />
-              <h2 className="text-xl font-bold mb-2">{inviterDetails?.name}</h2>
-              <p className="text-muted-foreground">Quer se conectar com você no Habitz</p>
+          <div className="mt-6">
+            <div className="text-center mb-4">
+              <p className="font-medium">Entre na sua conta ou crie uma nova para aceitar o convite</p>
             </div>
-            
-            {user ? (
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleAcceptInvitation}
-                  disabled={accepting}
-                  className="bg-levelup-primary hover:bg-levelup-primary/90"
-                >
-                  {accepting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <UserPlus className="h-5 w-5 mr-2" />
-                  )}
-                  Enviar solicitação de amizade
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-6">
-                <div className="text-center mb-4">
-                  <p className="font-medium">Entre na sua conta ou crie uma nova para aceitar o convite</p>
-                </div>
-                {renderAuthOptions()}
-              </div>
-            )}
+            <AuthTabs 
+              selectedTab={selectedTab}
+              setSelectedTab={setSelectedTab}
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              username={username}
+              setUsername={setUsername}
+              inviterId={inviterId}
+            />
           </div>
         )}
       </div>
