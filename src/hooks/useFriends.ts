@@ -26,7 +26,6 @@ export interface SearchUserResult {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
-  email: string | null;
 }
 
 // Function to fetch friend requests
@@ -121,8 +120,8 @@ const searchUser = async (query: string, currentUserId: string): Promise<SearchU
   // Buscar por email ou username
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, email')
-    .or(`username.ilike.%${query}%,email.ilike.%${query}%`)
+    .select('id, username, full_name, avatar_url')
+    .or(`username.ilike.%${query}%,username.ilike.%${query}%`)
     .limit(5);
     
   if (error) throw error;

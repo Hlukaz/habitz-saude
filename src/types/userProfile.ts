@@ -1,9 +1,9 @@
 
-export type UserProfile = {
+export interface UserProfile {
   id: string;
-  username: string;
-  full_name: string;
-  avatar_url: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
   streak: number;
   streak_blocks: number;
   last_activity_date: string | null;
@@ -13,5 +13,4 @@ export type UserProfile = {
   xp: number;
   created_at: string;
   updated_at: string;
-  email: string | null;
-};
+}
