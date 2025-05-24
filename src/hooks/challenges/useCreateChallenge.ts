@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Challenge } from '../useChallenges';
 
 export const useCreateChallenge = (userId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -14,8 +14,9 @@ export const useCreateChallenge = (userId: string | undefined) => {
     end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     has_bet: false,
     bet_amount: null as number | null,
-    is_habit_forming: false,
-    invitedFriends: [] as string[]
+    is_habit_forming: true,
+    invitedFriends: [] as string[],
+    target_points: null as number | null
   });
 
   const createChallengeMutation = useMutation({
@@ -87,8 +88,9 @@ export const useCreateChallenge = (userId: string | undefined) => {
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         has_bet: false,
         bet_amount: null,
-        is_habit_forming: false,
-        invitedFriends: []
+        is_habit_forming: true,
+        invitedFriends: [],
+        target_points: null
       });
     },
     onError: (error: any) => {
