@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Play } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -47,6 +47,11 @@ const CreateChallengeSheet = ({
   onCreateChallenge,
   isCreatingChallenge
 }: CreateChallengeSheetProps) => {
+  const isFormValid = newChallenge.name.trim() !== '' && 
+                     newChallenge.activity_type_id !== null &&
+                     (!newChallenge.has_bet || newChallenge.bet_amount !== null) &&
+                     (!newChallenge.is_habit_forming || newChallenge.target_points !== null);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
@@ -62,7 +67,7 @@ const CreateChallengeSheet = ({
           </SheetDescription>
         </SheetHeader>
         
-        <ScrollArea className="h-[calc(100vh-140px)] pr-4">
+        <ScrollArea className="h-[calc(100vh-200px)] pr-4">
           <div className="space-y-5">
             <div>
               <Label htmlFor="challenge-name" className="text-sm font-medium">Nome do Desafio</Label>
@@ -118,13 +123,29 @@ const CreateChallengeSheet = ({
           </div>
         </ScrollArea>
 
-        <div className="pt-4 border-t mt-4">
+        <div className="pt-4 border-t mt-4 space-y-3">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Resumo do Desafio</h4>
+            <div className="text-xs text-gray-600 space-y-1">
+              <p><span className="font-medium">Nome:</span> {newChallenge.name || 'Não definido'}</p>
+              <p><span className="font-medium">Tipo:</span> {newChallenge.is_habit_forming ? 'Formação de Hábito' : 'Competitivo'}</p>
+              <p><span className="font-medium">Período:</span> {newChallenge.start_date} até {newChallenge.end_date}</p>
+              {newChallenge.has_bet && newChallenge.bet_amount && (
+                <p><span className="font-medium">Aposta:</span> R$ {newChallenge.bet_amount}</p>
+              )}
+              {newChallenge.invitedFriends.length > 0 && (
+                <p><span className="font-medium">Convidados:</span> {newChallenge.invitedFriends.length} amigo(s)</p>
+              )}
+            </div>
+          </div>
+          
           <Button 
-            className="w-full text-sm py-2" 
+            className="w-full text-sm py-3 bg-levelup-primary hover:bg-levelup-primary/90" 
             onClick={onCreateChallenge} 
-            disabled={isCreatingChallenge || !newChallenge.name}
+            disabled={isCreatingChallenge || !isFormValid}
           >
-            {isCreatingChallenge ? 'Criando...' : 'Criar Desafio'}
+            <Play className="w-4 h-4 mr-2" />
+            {isCreatingChallenge ? 'Criando Desafio...' : 'Iniciar Desafio'}
           </Button>
         </div>
       </SheetContent>
