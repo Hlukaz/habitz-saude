@@ -65,6 +65,13 @@ export const useConfirmFriendRequest = () => {
           setSenderName(senderData.full_name || senderData.username);
         }
         
+        // Check if friendship already exists
+        const { data: existingFriendship } = await supabase
+          .from('friendships')
+          .select('id')
+          .or(`and(user_id.eq.${requestData.receiver_id},friend_id.eq.${requestData.sender_id}),and(user_id.eq.${requestData.sender_id},friend_id.eq.${requestData.receiver_id})`)
+          .limit(1);
+        
         // Atualizar status do pedido
         const { error: updateError } = await supabase
           .from('friend_requests')
@@ -77,19 +84,22 @@ export const useConfirmFriendRequest = () => {
           return;
         }
         
-        // Criar relações de amizade para ambos os usuários
-        const { error: error1 } = await supabase
-          .from('friendships')
-          .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
-        
-        const { error: error2 } = await supabase
-          .from('friendships')
-          .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
-        
-        if (error1 || error2) {
-          console.error('Erro ao criar amizade:', error1 || error2);
-          setError('Erro ao adicionar amigo');
-          return;
+        // Only create friendships if they don't already exist
+        if (!existingFriendship || existingFriendship.length === 0) {
+          // Criar relações de amizade para ambos os usuários
+          const { error: error1 } = await supabase
+            .from('friendships')
+            .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
+          
+          const { error: error2 } = await supabase
+            .from('friendships')
+            .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
+          
+          if (error1 || error2) {
+            console.error('Erro ao criar amizade:', error1 || error2);
+            setError('Erro ao adicionar amigo');
+            return;
+          }
         }
         
         setSuccess(true);

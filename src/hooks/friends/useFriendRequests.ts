@@ -22,30 +22,59 @@ export const useFriendRequests = () => {
   // Accept friend request mutation
   const acceptRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      // First, update the request status to 'accepted'
-      const { data: requestData, error: requestUpdateError } = await supabase
+      if (!user?.id) throw new Error('Usuário não autenticado');
+
+      // First, get the request details
+      const { data: requestData, error: requestFetchError } = await supabase
         .from('friend_requests')
-        .update({ status: 'accepted' })
-        .eq('id', requestId)
         .select('sender_id, receiver_id')
+        .eq('id', requestId)
         .single();
       
-      if (requestUpdateError) throw requestUpdateError;
-      
-      if (!requestData) throw new Error('Request not found');
-      
-      // Create friendship entries for both users
-      const { error: error1 } = await supabase
+      if (requestFetchError || !requestData) {
+        console.error('Erro ao buscar pedido:', requestFetchError);
+        throw new Error('Pedido de amizade não encontrado');
+      }
+
+      // Check if friendship already exists (to avoid duplicate key error)
+      const { data: existingFriendship } = await supabase
         .from('friendships')
-        .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
+        .select('id')
+        .or(`and(user_id.eq.${requestData.receiver_id},friend_id.eq.${requestData.sender_id}),and(user_id.eq.${requestData.sender_id},friend_id.eq.${requestData.receiver_id})`)
+        .limit(1);
+
+      // Update the request status to 'accepted'
+      const { error: requestUpdateError } = await supabase
+        .from('friend_requests')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
       
-      if (error1) throw error1;
-      
-      const { error: error2 } = await supabase
-        .from('friendships')
-        .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
-      
-      if (error2) throw error2;
+      if (requestUpdateError) {
+        console.error('Erro ao atualizar pedido:', requestUpdateError);
+        throw requestUpdateError;
+      }
+
+      // Only create friendships if they don't already exist
+      if (!existingFriendship || existingFriendship.length === 0) {
+        // Create friendship entries for both users
+        const { error: error1 } = await supabase
+          .from('friendships')
+          .insert({ user_id: requestData.receiver_id, friend_id: requestData.sender_id });
+        
+        if (error1) {
+          console.error('Erro ao criar amizade 1:', error1);
+          throw error1;
+        }
+        
+        const { error: error2 } = await supabase
+          .from('friendships')
+          .insert({ user_id: requestData.sender_id, friend_id: requestData.receiver_id });
+        
+        if (error2) {
+          console.error('Erro ao criar amizade 2:', error2);
+          throw error2;
+        }
+      }
       
       return requestId;
     },
@@ -54,7 +83,7 @@ export const useFriendRequests = () => {
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
       toast.success('Solicitação de amizade aceita!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error accepting friend request:', error);
       toast.error('Erro ao aceitar solicitação. Tente novamente.');
     }
