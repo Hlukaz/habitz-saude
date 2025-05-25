@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ActivityTypeSelectProps {
-  onSelect: (activityTypeId: string) => void;
+  onSelect: (activityTypeId: string | null) => void;
   selectedActivityType: string | null;
   className?: string;
   filterHabitForming?: boolean;
@@ -90,13 +90,21 @@ const ActivityTypeSelect: React.FC<ActivityTypeSelectProps> = ({
       <Label htmlFor="activity-type">Tipo de Atividade</Label>
       <Select 
         value={selectedActivityType || undefined}
-        onValueChange={onSelect}
+        onValueChange={(value) => onSelect(value === 'any' ? null : value)}
       >
         <SelectTrigger id="activity-type" className="w-full">
           <SelectValue placeholder="Selecione o tipo de atividade" />
         </SelectTrigger>
         <SelectContent>
           <ScrollArea className="h-40 w-full">
+            {filterHabitForming === false && (
+              <SelectItem value="any" className="flex items-center gap-2">
+                <span className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  Qualquer Atividade
+                </span>
+              </SelectItem>
+            )}
             {activityTypes.map((type) => (
               <SelectItem 
                 key={type.id} 

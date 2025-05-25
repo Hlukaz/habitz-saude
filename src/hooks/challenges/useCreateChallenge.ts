@@ -25,6 +25,8 @@ export const useCreateChallenge = (userId: string | undefined) => {
         throw new Error('User not authenticated');
       }
 
+      console.log('Creating challenge with data:', challengeData);
+
       // Create the challenge
       const { data: challenge, error: challengeError } = await supabase
         .from('challenges')
@@ -41,8 +43,11 @@ export const useCreateChallenge = (userId: string | undefined) => {
         .single();
 
       if (challengeError) {
+        console.error('Error creating challenge:', challengeError);
         throw challengeError;
       }
+
+      console.log('Challenge created successfully:', challenge);
 
       // Add the creator as a participant
       const { error: participantError } = await supabase
@@ -54,6 +59,7 @@ export const useCreateChallenge = (userId: string | undefined) => {
         });
 
       if (participantError) {
+        console.error('Error adding creator as participant:', participantError);
         throw participantError;
       }
 
@@ -76,9 +82,11 @@ export const useCreateChallenge = (userId: string | undefined) => {
 
       return challenge;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Challenge creation mutation successful:', data);
       queryClient.invalidateQueries({ queryKey: ['activeChallenges'] });
       queryClient.invalidateQueries({ queryKey: ['challengeInvites'] });
+      queryClient.invalidateQueries({ queryKey: ['completedChallenges'] });
       toast.success('Desafio criado com sucesso!');
       setChallengeFormOpen(false);
       setNewChallenge({
@@ -100,6 +108,7 @@ export const useCreateChallenge = (userId: string | undefined) => {
   });
 
   const handleCreateChallenge = () => {
+    console.log('Attempting to create challenge with data:', newChallenge);
     createChallengeMutation.mutate(newChallenge);
   };
 

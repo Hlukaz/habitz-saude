@@ -48,9 +48,15 @@ const CreateChallengeSheet = ({
   isCreatingChallenge
 }: CreateChallengeSheetProps) => {
   const isFormValid = newChallenge.name.trim() !== '' && 
-                     newChallenge.activity_type_id !== null &&
                      (!newChallenge.has_bet || newChallenge.bet_amount !== null) &&
                      (!newChallenge.is_habit_forming || newChallenge.target_points !== null);
+
+  const getActivityDisplayName = () => {
+    if (!newChallenge.activity_type_id) {
+      return newChallenge.is_habit_forming ? 'Não definido' : 'Qualquer Atividade';
+    }
+    return 'Atividade específica';
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -68,7 +74,7 @@ const CreateChallengeSheet = ({
         </SheetHeader>
         
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-4">
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4">
             <div className="space-y-5 pb-4">
               <div>
                 <Label htmlFor="challenge-name" className="text-sm font-medium">Nome do Desafio</Label>
@@ -131,6 +137,7 @@ const CreateChallengeSheet = ({
             <div className="text-xs text-gray-600 space-y-1">
               <p><span className="font-medium">Nome:</span> {newChallenge.name || 'Não definido'}</p>
               <p><span className="font-medium">Tipo:</span> {newChallenge.is_habit_forming ? 'Formação de Hábito' : 'Competitivo'}</p>
+              <p><span className="font-medium">Atividade:</span> {getActivityDisplayName()}</p>
               <p><span className="font-medium">Período:</span> {newChallenge.start_date} até {newChallenge.end_date}</p>
               {newChallenge.has_bet && newChallenge.bet_amount && (
                 <p><span className="font-medium">Aposta:</span> R$ {newChallenge.bet_amount}</p>

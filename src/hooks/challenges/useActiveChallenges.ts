@@ -5,6 +5,8 @@ import { ChallengeWithDetails } from '../useChallenges';
 
 const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithDetails[]> => {
   try {
+    console.log('Fetching active challenges for user:', userId);
+
     // Get challenges where the user is a participant with 'accepted' status
     const { data: participantData, error: participantError } = await supabase
       .from('challenge_participants')
@@ -23,23 +25,21 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
     }
 
     if (!participantData || participantData.length === 0) {
+      console.log('No active challenge participants found');
       return [];
     }
 
     // Get the challenge IDs where the user is a participant
     const challengeIds = participantData.map(participant => participant.challenge_id);
+    console.log('Challenge IDs:', challengeIds);
 
-    // Get the challenge details
+    // Get the challenge details with activity types
     const { data: challenges, error: challengesError } = await supabase
       .from('challenges')
       .select(`
         *,
         activity_types (
           name
-        ),
-        profiles:profiles!challenges_creator_id_fkey (
-          username,
-          full_name
         )
       `)
       .in('id', challengeIds);
@@ -49,11 +49,24 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
       return [];
     }
 
+    console.log('Fetched challenges:', challenges);
+
+    // Get creator profiles separately
+    const creatorIds = [...new Set((challenges || []).map(c => c.creator_id))];
+    const { data: creatorProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', creatorIds);
+
+    if (profilesError) {
+      console.error('Error fetching creator profiles:', profilesError);
+    }
+
     // Map challenges to include additional details
     const activeChallenges = (challenges || []).map(challenge => {
-      const activityName = challenge.activity_types?.name || null;
-      const creatorProfile = challenge.profiles as any;
-      const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Unknown';
+      const activityName = challenge.activity_types?.name || 'Qualquer Atividade';
+      const creatorProfile = creatorProfiles?.find(p => p.id === challenge.creator_id);
+      const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Usuário';
       
       return {
         ...challenge,
@@ -79,6 +92,7 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
       challenge.participants = count || 0;
     }
 
+    console.log('Final active challenges:', activeChallenges);
     return activeChallenges;
   } catch (error) {
     console.error('Error in fetchUserActiveChallenges:', error);
