@@ -6,7 +6,6 @@ import { useProfileData } from '@/hooks/useProfileData';
 import { useUserData } from '@/hooks/useUserData';
 import { UserProfile } from '@/types/userProfile';
 import AchievementsList from '@/components/AchievementsList';
-import StreakDisplay from '@/components/StreakDisplay';
 import ProfileHeader from '@/components/ProfileHeader';
 import ProfileSettings from '@/components/ProfileSettings';
 import ProfilePageHeader from '@/components/ProfilePageHeader';
@@ -61,20 +60,22 @@ const ProfilePage = () => {
     );
   }
 
-  const userData: UserProfile = profile || {
+  const userData: UserProfile = {
+    ...profile,
     id: user?.id || '',
     username: user?.email?.split('@')[0] || 'Usuário',
-    full_name: user?.user_metadata?.full_name || 'Usuário',
-    avatar_url: user?.user_metadata?.avatar_url || '',
-    streak: 0,
-    streak_blocks: 2,
-    last_activity_date: null,
-    last_streak_update: null,
-    last_block_reset: null,
-    notification_token: null,
-    xp: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    full_name: user?.user_metadata?.full_name || profile?.full_name || 'Usuário',
+    avatar_url: profile?.avatar_url || user?.user_metadata?.avatar_url || '',
+    streak: profile?.streak || 0,
+    streak_blocks: profile?.streak_blocks || 2,
+    last_activity_date: profile?.last_activity_date || null,
+    last_streak_update: profile?.last_streak_update || null,
+    last_block_reset: profile?.last_block_reset || null,
+    notification_token: profile?.notification_token || null,
+    xp: profile?.xp || 0,
+    created_at: profile?.created_at || new Date().toISOString(),
+    updated_at: profile?.updated_at || new Date().toISOString(),
+    total_points: totalPoints
   };
 
   const level = Math.floor((totalPoints || 0) / 50) + 1;
@@ -93,16 +94,6 @@ const ProfilePage = () => {
           userEmail={user?.email}
           level={level}
           xpToNextLevel={xpToNextLevel}
-        />
-      </div>
-      
-      <div className="px-4 mb-6">
-        <StreakDisplay 
-          streak={userData.streak || 0}
-          lastActivityDate={userData.last_activity_date}
-          streakBlocks={userData.streak_blocks || 2}
-          lastBlockReset={userData.last_block_reset}
-          className="shadow-sm"
         />
       </div>
       

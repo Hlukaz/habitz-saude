@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Camera, Trophy, Calendar } from 'lucide-react';
 import { UserProfile } from '@/types/userProfile';
@@ -83,13 +84,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <AvatarImage src={userData.avatar_url} alt={userData.full_name} className="object-cover" />
             ) : (
               <AvatarFallback className="bg-levelup-light text-levelup-primary">
-                {userData.full_name.substring(0, 2).toUpperCase()}
+                {userData.full_name ? userData.full_name.substring(0, 2).toUpperCase() : 'US'}
               </AvatarFallback>
             )}
           </Avatar>
           <label 
             htmlFor="avatar-upload" 
-            className="absolute bottom-0 right-0 w-8 h-8 bg-levelup-primary rounded-full flex items-center justify-center text-white shadow-sm cursor-pointer"
+            className="absolute bottom-0 right-0 w-8 h-8 bg-levelup-primary rounded-full flex items-center justify-center text-white shadow-sm cursor-pointer hover:bg-levelup-primary/90 transition-colors"
           >
             <Camera className="w-4 h-4" />
             <input 
@@ -109,10 +110,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <div className="bg-levelup-light text-levelup-dark text-xs font-medium px-2 py-1 rounded-full mr-2">
               Nível {level}
             </div>
-            <div className="bg-levelup-light text-levelup-primary text-xs font-medium px-2 py-1 rounded-full flex items-center">
-              <Flame className="w-3 h-3 mr-1" />
-              {userData.streak} dias seguidos
-            </div>
           </div>
         </div>
       </div>
@@ -128,7 +125,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         />
       </div>
       
-      <PointsSummary totalPoints={userData.total_points} createdAt={userData.created_at} />
+      <PointsSummary totalPoints={userData.total_points || 0} createdAt={userData.created_at} />
     </div>
   );
 };
@@ -170,5 +167,3 @@ const PointsSummary: React.FC<PointsSummaryProps> = ({ totalPoints, createdAt })
 };
 
 export default ProfileHeader;
-
-import { Flame } from 'lucide-react';
