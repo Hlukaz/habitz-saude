@@ -59,71 +59,73 @@ const CreateChallengeSheet = ({
           <Plus className="w-5 h-5" />
         </button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
-        <SheetHeader className="pb-4">
+      <SheetContent className="w-full sm:max-w-md flex flex-col">
+        <SheetHeader className="pb-4 flex-shrink-0">
           <SheetTitle className="text-lg font-bold">Criar Novo Desafio</SheetTitle>
           <SheetDescription className="text-sm">
             Configure as regras do seu desafio e convide amigos para participar.
           </SheetDescription>
         </SheetHeader>
         
-        <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-          <div className="space-y-5">
-            <div>
-              <Label htmlFor="challenge-name" className="text-sm font-medium">Nome do Desafio</Label>
-              <Input 
-                id="challenge-name" 
-                placeholder="Digite o nome do desafio" 
-                value={newChallenge.name}
-                onChange={(e) => onChallengeChange({...newChallenge, name: e.target.value})}
-                className="mt-1"
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
+            <div className="space-y-5 pb-4">
+              <div>
+                <Label htmlFor="challenge-name" className="text-sm font-medium">Nome do Desafio</Label>
+                <Input 
+                  id="challenge-name" 
+                  placeholder="Digite o nome do desafio" 
+                  value={newChallenge.name}
+                  onChange={(e) => onChallengeChange({...newChallenge, name: e.target.value})}
+                  className="mt-1"
+                />
+              </div>
+              
+              <ChallengeTypeSelector
+                isHabitForming={newChallenge.is_habit_forming}
+                onChange={(isHabitForming) => onChallengeChange({...newChallenge, is_habit_forming: isHabitForming})}
+              />
+
+              <div>
+                <Label className="text-sm font-medium">Tipo de Atividade</Label>
+                <ActivityTypeSelect
+                  onSelect={(type) => onChallengeChange({...newChallenge, activity_type_id: type})}
+                  selectedActivityType={newChallenge.activity_type_id}
+                  className="w-full mt-1"
+                  filterHabitForming={newChallenge.is_habit_forming}
+                />
+              </div>
+
+              <DateRangeSelector
+                startDate={newChallenge.start_date}
+                endDate={newChallenge.end_date}
+                onStartDateChange={(date) => onChallengeChange({...newChallenge, start_date: date})}
+                onEndDateChange={(date) => onChallengeChange({...newChallenge, end_date: date})}
+              />
+
+              {!newChallenge.is_habit_forming && (
+                <CompetitiveChallengeConfig
+                  targetPoints={newChallenge.target_points || null}
+                  onTargetPointsChange={(points) => onChallengeChange({...newChallenge, target_points: points})}
+                />
+              )}
+
+              <BetInput
+                hasBet={newChallenge.has_bet}
+                betAmount={newChallenge.bet_amount}
+                onHasBetChange={(hasBet) => onChallengeChange({...newChallenge, has_bet: hasBet})}
+                onBetAmountChange={(amount) => onChallengeChange({...newChallenge, bet_amount: amount})}
+              />
+
+              <FriendSelector
+                selectedFriends={newChallenge.invitedFriends}
+                onFriendsChange={(friends) => onChallengeChange({...newChallenge, invitedFriends: friends})}
               />
             </div>
-            
-            <ChallengeTypeSelector
-              isHabitForming={newChallenge.is_habit_forming}
-              onChange={(isHabitForming) => onChallengeChange({...newChallenge, is_habit_forming: isHabitForming})}
-            />
+          </ScrollArea>
+        </div>
 
-            <div>
-              <Label className="text-sm font-medium">Tipo de Atividade</Label>
-              <ActivityTypeSelect
-                onSelect={(type) => onChallengeChange({...newChallenge, activity_type_id: type})}
-                selectedActivityType={newChallenge.activity_type_id}
-                className="w-full mt-1"
-                filterHabitForming={newChallenge.is_habit_forming}
-              />
-            </div>
-
-            <DateRangeSelector
-              startDate={newChallenge.start_date}
-              endDate={newChallenge.end_date}
-              onStartDateChange={(date) => onChallengeChange({...newChallenge, start_date: date})}
-              onEndDateChange={(date) => onChallengeChange({...newChallenge, end_date: date})}
-            />
-
-            {!newChallenge.is_habit_forming && (
-              <CompetitiveChallengeConfig
-                targetPoints={newChallenge.target_points || null}
-                onTargetPointsChange={(points) => onChallengeChange({...newChallenge, target_points: points})}
-              />
-            )}
-
-            <BetInput
-              hasBet={newChallenge.has_bet}
-              betAmount={newChallenge.bet_amount}
-              onHasBetChange={(hasBet) => onChallengeChange({...newChallenge, has_bet: hasBet})}
-              onBetAmountChange={(amount) => onChallengeChange({...newChallenge, bet_amount: amount})}
-            />
-
-            <FriendSelector
-              selectedFriends={newChallenge.invitedFriends}
-              onFriendsChange={(friends) => onChallengeChange({...newChallenge, invitedFriends: friends})}
-            />
-          </div>
-        </ScrollArea>
-
-        <div className="pt-4 border-t mt-4 space-y-3">
+        <div className="pt-4 border-t space-y-3 flex-shrink-0">
           <div className="bg-gray-50 p-3 rounded-lg">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Resumo do Desafio</h4>
             <div className="text-xs text-gray-600 space-y-1">
