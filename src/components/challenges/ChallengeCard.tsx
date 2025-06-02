@@ -1,11 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Trophy, Users, Calendar, DollarSign, Dumbbell, Check, X, Star, Zap } from 'lucide-react';
 import { ChallengeWithDetails } from '@/hooks/useChallenges';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 import ChallengeDetailsSheet from './ChallengeDetailsSheet';
+import ChallengeSummaryDialog from './ChallengeSummaryDialog';
+import { useChallengeSummary } from '@/hooks/challenges/useChallengeSummary';
 
 type ChallengeCardProps = {
   challenge: ChallengeWithDetails;
@@ -24,6 +27,18 @@ const ChallengeCard = ({
   isAccepting,
   isDeclining
 }: ChallengeCardProps) => {
+  const { user } = useAuth();
+  const [showSummary, setShowSummary] = useState(false);
+  
+  const { summary, userPoints, isWinner, isLoading } = useChallengeSummary(
+    challenge.id, 
+    user?.id
+  );
+
+  const handleViewSummary = () => {
+    setShowSummary(true);
+  };
+
   const renderContent = () => {
     switch (variant) {
       case 'active':
@@ -211,11 +226,31 @@ const ChallengeCard = ({
               )}
             </div>
 
-            <ChallengeDetailsSheet challenge={challenge}>
-              <Button variant="outline" className="w-full mt-3 text-sm">
-                Ver Estatísticas
+            <div className="flex gap-2 mt-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleViewSummary}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                Ver Resumo
               </Button>
-            </ChallengeDetailsSheet>
+              <ChallengeDetailsSheet challenge={challenge}>
+                <Button variant="outline" size="sm" className="flex-1">
+                  Estatísticas
+                </Button>
+              </ChallengeDetailsSheet>
+            </div>
+
+            <ChallengeSummaryDialog
+              isOpen={showSummary}
+              onClose={() => setShowSummary(false)}
+              challengeName={challenge.name}
+              summary={summary}
+              isWinner={isWinner}
+              userPoints={userPoints}
+            />
           </div>
         );
     }

@@ -108,26 +108,67 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_messages: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_messages_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_participants: {
         Row: {
           challenge_id: string
           id: string
+          is_eliminated: boolean | null
           joined_at: string
+          points: number | null
           status: string
+          tier_level: number | null
           user_id: string
         }
         Insert: {
           challenge_id: string
           id?: string
+          is_eliminated?: boolean | null
           joined_at?: string
+          points?: number | null
           status?: string
+          tier_level?: number | null
           user_id: string
         }
         Update: {
           challenge_id?: string
           id?: string
+          is_eliminated?: boolean | null
           joined_at?: string
+          points?: number | null
           status?: string
+          tier_level?: number | null
           user_id?: string
         }
         Relationships: [
@@ -140,39 +181,186 @@ export type Database = {
           },
         ]
       }
+      challenge_progress_photos: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_photos_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_reminders: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          enabled: boolean
+          frequency: string
+          id: string
+          reminder_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          reminder_time?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          reminder_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_reminders_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_summaries: {
+        Row: {
+          challenge_id: string
+          completion_type: string
+          created_at: string
+          id: string
+          summary_text: string | null
+          total_bet_pool: number | null
+          total_participants: number
+          winner_points: number | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          challenge_id: string
+          completion_type: string
+          created_at?: string
+          id?: string
+          summary_text?: string | null
+          total_bet_pool?: number | null
+          total_participants?: number
+          winner_points?: number | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          completion_type?: string
+          created_at?: string
+          id?: string
+          summary_text?: string | null
+          total_bet_pool?: number | null
+          total_participants?: number
+          winner_points?: number | null
+          winner_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_summaries_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           activity_type_id: string | null
           bet_amount: number | null
+          completed_at: string | null
           created_at: string
           creator_id: string
+          educational_tips: string | null
+          elimination_threshold: number | null
           end_date: string
+          gradual_progression: boolean | null
           has_bet: boolean
           id: string
           name: string
+          point_multiplier: number | null
+          reminder_enabled: boolean | null
+          rewards: string | null
           start_date: string
+          status: string | null
+          target_points: number | null
         }
         Insert: {
           activity_type_id?: string | null
           bet_amount?: number | null
+          completed_at?: string | null
           created_at?: string
           creator_id: string
+          educational_tips?: string | null
+          elimination_threshold?: number | null
           end_date: string
+          gradual_progression?: boolean | null
           has_bet?: boolean
           id?: string
           name: string
+          point_multiplier?: number | null
+          reminder_enabled?: boolean | null
+          rewards?: string | null
           start_date: string
+          status?: string | null
+          target_points?: number | null
         }
         Update: {
           activity_type_id?: string | null
           bet_amount?: number | null
+          completed_at?: string | null
           created_at?: string
           creator_id?: string
+          educational_tips?: string | null
+          elimination_threshold?: number | null
           end_date?: string
+          gradual_progression?: boolean | null
           has_bet?: boolean
           id?: string
           name?: string
+          point_multiplier?: number | null
+          reminder_enabled?: boolean | null
+          rewards?: string | null
           start_date?: string
+          status?: string | null
+          target_points?: number | null
         }
         Relationships: [
           {
@@ -427,6 +615,10 @@ export type Database = {
     Functions: {
       check_activity_achievements: {
         Args: { user_id_param: string; activity_type_id_param: string }
+        Returns: undefined
+      }
+      complete_challenge_automatically: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       get_challenge_live_ranking: {

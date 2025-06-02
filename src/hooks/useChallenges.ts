@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/context/AuthContext';
 import { useCreateChallenge } from './challenges/useCreateChallenge';
 import { useChallengeInvites } from './challenges/useChallengeInvites';
@@ -21,6 +22,8 @@ export type Challenge = {
   educational_tips?: string | null;
   reminder_enabled?: boolean;
   gradual_progression?: boolean;
+  status?: string;
+  completed_at?: string | null;
 };
 
 export type ChallengeParticipant = {
