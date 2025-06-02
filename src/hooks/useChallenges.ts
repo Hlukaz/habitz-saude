@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/context/AuthContext';
 import { useCreateChallenge } from './challenges/useCreateChallenge';
 import { useChallengeInvites } from './challenges/useChallengeInvites';
@@ -15,6 +14,13 @@ export type Challenge = {
   has_bet: boolean;
   bet_amount: number | null;
   created_at: string;
+  target_points?: number | null;
+  point_multiplier?: number | null;
+  elimination_threshold?: number | null;
+  rewards?: string | null;
+  educational_tips?: string | null;
+  reminder_enabled?: boolean;
+  gradual_progression?: boolean;
 };
 
 export type ChallengeParticipant = {
@@ -23,6 +29,9 @@ export type ChallengeParticipant = {
   user_id: string;
   joined_at: string;
   status: 'pending' | 'accepted' | 'declined';
+  points?: number;
+  is_eliminated?: boolean;
+  tier_level?: number;
 };
 
 export type ChallengeWithDetails = Challenge & {

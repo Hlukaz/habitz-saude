@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import ActivityTypeSelect from '@/components/ActivityTypeSelect';
 import ChallengeTypeSelector from '@/components/form/ChallengeTypeSelector';
 import DateRangeSelector from '@/components/form/DateRangeSelector';
@@ -33,6 +35,11 @@ interface CreateChallengeSheetProps {
     is_habit_forming: boolean;
     invitedFriends: string[];
     target_points?: number | null;
+    point_multiplier?: number | null;
+    rewards?: string;
+    educational_tips?: string;
+    reminder_enabled?: boolean;
+    gradual_progression?: boolean;
   };
   onChallengeChange: (challenge: any) => void;
   onCreateChallenge: () => void;
@@ -116,6 +123,78 @@ const CreateChallengeSheet = ({
                 />
               )}
 
+              <div>
+                <Label htmlFor="point-multiplier" className="text-sm font-medium">Multiplicador de Pontos</Label>
+                <Input 
+                  id="point-multiplier" 
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                  placeholder="1.0" 
+                  value={newChallenge.point_multiplier || ''}
+                  onChange={(e) => onChallengeChange({...newChallenge, point_multiplier: parseFloat(e.target.value) || null})}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Multiplique os pontos ganhos neste desafio (ex: 2.0 = pontos em dobro)
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="rewards" className="text-sm font-medium">Recompensas</Label>
+                <Input 
+                  id="rewards" 
+                  placeholder="Ex: Badge Especial, Desconto 20%, Troféu Virtual" 
+                  value={newChallenge.rewards || ''}
+                  onChange={(e) => onChallengeChange({...newChallenge, rewards: e.target.value})}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Separe múltiplas recompensas com vírgulas
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="educational-tips" className="text-sm font-medium">Dica Educacional</Label>
+                <Textarea 
+                  id="educational-tips" 
+                  placeholder="Ex: Lembre-se de se hidratar durante os exercícios..."
+                  value={newChallenge.educational_tips || ''}
+                  onChange={(e) => onChallengeChange({...newChallenge, educational_tips: e.target.value})}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="reminder-enabled">Lembretes Automáticos</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enviar lembretes para participantes
+                  </p>
+                </div>
+                <Switch
+                  id="reminder-enabled"
+                  checked={newChallenge.reminder_enabled || false}
+                  onCheckedChange={(checked) => onChallengeChange({...newChallenge, reminder_enabled: checked})}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="gradual-progression">Progressão Gradual</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Aumentar dificuldade ao longo do tempo
+                  </p>
+                </div>
+                <Switch
+                  id="gradual-progression"
+                  checked={newChallenge.gradual_progression || false}
+                  onCheckedChange={(checked) => onChallengeChange({...newChallenge, gradual_progression: checked})}
+                />
+              </div>
+
               <BetInput
                 hasBet={newChallenge.has_bet}
                 betAmount={newChallenge.bet_amount}
@@ -141,6 +220,9 @@ const CreateChallengeSheet = ({
               <p><span className="font-medium">Período:</span> {newChallenge.start_date} até {newChallenge.end_date}</p>
               {newChallenge.has_bet && newChallenge.bet_amount && (
                 <p><span className="font-medium">Aposta:</span> R$ {newChallenge.bet_amount}</p>
+              )}
+              {newChallenge.point_multiplier && newChallenge.point_multiplier > 1 && (
+                <p><span className="font-medium">Multiplicador:</span> {newChallenge.point_multiplier}x</p>
               )}
               {newChallenge.invitedFriends.length > 0 && (
                 <p><span className="font-medium">Convidados:</span> {newChallenge.invitedFriends.length} amigo(s)</p>

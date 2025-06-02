@@ -429,6 +429,16 @@ export type Database = {
         Args: { user_id_param: string; activity_type_id_param: string }
         Returns: undefined
       }
+      get_challenge_live_ranking: {
+        Args: { challenge_id_param: string }
+        Returns: {
+          user_id: string
+          full_name: string
+          avatar_url: string
+          total_points: number
+          rank_position: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

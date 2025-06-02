@@ -1,9 +1,11 @@
 
 import React from 'react';
-import { Trophy, Users, Calendar, DollarSign, Dumbbell, Check, X } from 'lucide-react';
+import { Trophy, Users, Calendar, DollarSign, Dumbbell, Check, X, Star, Zap } from 'lucide-react';
 import { ChallengeWithDetails } from '@/hooks/useChallenges';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import ChallengeDetailsSheet from './ChallengeDetailsSheet';
 
 type ChallengeCardProps = {
   challenge: ChallengeWithDetails;
@@ -29,7 +31,15 @@ const ChallengeCard = ({
           <div className="bg-card rounded-lg shadow-sm overflow-hidden">
             <div className="bg-levelup-primary text-white p-3 flex items-center justify-between">
               <h3 className="font-bold">{challenge.name}</h3>
-              <Trophy className="w-5 h-5" />
+              <div className="flex items-center gap-2">
+                {challenge.point_multiplier && challenge.point_multiplier > 1 && (
+                  <Badge className="bg-yellow-500 text-white">
+                    <Zap className="w-3 h-3 mr-1" />
+                    {challenge.point_multiplier}x
+                  </Badge>
+                )}
+                <Trophy className="w-5 h-5" />
+              </div>
             </div>
             
             <div className="p-3">
@@ -55,6 +65,15 @@ const ChallengeCard = ({
                   </div>
                 )}
               </div>
+
+              {challenge.rewards && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Star className="w-3 h-3 text-yellow-500" />
+                    <span className="text-xs text-muted-foreground">Recompensas disponíveis</span>
+                  </div>
+                </div>
+              )}
               
               {typeof challenge.progress === 'number' && (
                 <div className="mb-2">
@@ -71,9 +90,11 @@ const ChallengeCard = ({
                 </div>
               )}
               
-              <button className="w-full py-2 bg-levelup-secondary text-white rounded-lg text-sm font-medium mt-2">
-                Ver Detalhes
-              </button>
+              <ChallengeDetailsSheet challenge={challenge}>
+                <Button className="w-full py-2 bg-levelup-secondary text-white rounded-lg text-sm font-medium mt-2">
+                  Ver Detalhes
+                </Button>
+              </ChallengeDetailsSheet>
             </div>
           </div>
         );
@@ -128,15 +149,19 @@ const ChallengeCard = ({
                   </div>
                 )}
                 {challenge.has_bet && challenge.bet_amount && (
-                  <div className="flex items-center gap-1 text
-
--levelup-accent">
+                  <div className="flex items-center gap-1 text-levelup-accent">
                     <DollarSign className="w-3 h-3" />
                     <span>R${challenge.bet_amount}</span>
                   </div>
                 )}
               </div>
             </div>
+
+            <ChallengeDetailsSheet challenge={challenge}>
+              <Button variant="outline" className="w-full mt-3 text-sm">
+                Ver Detalhes do Desafio
+              </Button>
+            </ChallengeDetailsSheet>
           </div>
         );
 
@@ -185,6 +210,12 @@ const ChallengeCard = ({
                 </div>
               )}
             </div>
+
+            <ChallengeDetailsSheet challenge={challenge}>
+              <Button variant="outline" className="w-full mt-3 text-sm">
+                Ver Estatísticas
+              </Button>
+            </ChallengeDetailsSheet>
           </div>
         );
     }
