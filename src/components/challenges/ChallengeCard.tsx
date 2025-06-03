@@ -1,14 +1,9 @@
 
-import React, { useState } from 'react';
-import { Trophy, Users, Calendar, DollarSign, Dumbbell, Check, X, Star, Zap } from 'lucide-react';
+import React from 'react';
 import { ChallengeWithDetails } from '@/hooks/useChallenges';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
-import ChallengeDetailsSheet from './ChallengeDetailsSheet';
-import ChallengeSummaryDialog from './ChallengeSummaryDialog';
-import { useChallengeSummary } from '@/hooks/challenges/useChallengeSummary';
+import ActiveChallengeCard from './ActiveChallengeCard';
+import InviteChallengeCard from './InviteChallengeCard';
+import CompletedChallengeCard from './CompletedChallengeCard';
 
 type ChallengeCardProps = {
   challenge: ChallengeWithDetails;
@@ -27,236 +22,27 @@ const ChallengeCard = ({
   isAccepting,
   isDeclining
 }: ChallengeCardProps) => {
-  const { user } = useAuth();
-  const [showSummary, setShowSummary] = useState(false);
-  
-  const { summary, userPoints, isWinner, isLoading } = useChallengeSummary(
-    challenge.id, 
-    user?.id
-  );
-
-  const handleViewSummary = () => {
-    setShowSummary(true);
-  };
-
-  const renderContent = () => {
-    switch (variant) {
-      case 'active':
-        return (
-          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-levelup-primary text-white p-3 flex items-center justify-between">
-              <h3 className="font-bold">{challenge.name}</h3>
-              <div className="flex items-center gap-2">
-                {challenge.point_multiplier && challenge.point_multiplier > 1 && (
-                  <Badge className="bg-yellow-500 text-white">
-                    <Zap className="w-3 h-3 mr-1" />
-                    {challenge.point_multiplier}x
-                  </Badge>
-                )}
-                <Trophy className="w-5 h-5" />
-              </div>
-            </div>
-            
-            <div className="p-3">
-              <div className="flex flex-wrap gap-y-2 mb-3">
-                <div className="flex items-center w-1/2">
-                  <Users className="w-4 h-4 text-muted-foreground mr-1" />
-                  <span className="text-sm">{challenge.participants} participantes</span>
-                </div>
-                <div className="flex items-center w-1/2">
-                  <Calendar className="w-4 h-4 text-muted-foreground mr-1" />
-                  <span className="text-sm">{challenge.start_date} - {challenge.end_date}</span>
-                </div>
-                {challenge.activity_name && (
-                  <div className="flex items-center w-1/2">
-                    <Dumbbell className="w-4 h-4 text-muted-foreground mr-1" />
-                    <span className="text-sm">{challenge.activity_name}</span>
-                  </div>
-                )}
-                {challenge.has_bet && challenge.bet_amount && (
-                  <div className="flex items-center w-1/2">
-                    <DollarSign className="w-4 h-4 text-levelup-accent mr-1" />
-                    <span className="text-sm">Aposta: R${challenge.bet_amount}</span>
-                  </div>
-                )}
-              </div>
-
-              {challenge.rewards && (
-                <div className="mb-3">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Star className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs text-muted-foreground">Recompensas disponíveis</span>
-                  </div>
-                </div>
-              )}
-              
-              {typeof challenge.progress === 'number' && (
-                <div className="mb-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-muted-foreground">Progresso</span>
-                    <span className="text-sm font-medium">{challenge.progress}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-levelup-primary rounded-full" 
-                      style={{ width: `${challenge.progress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <ChallengeDetailsSheet challenge={challenge}>
-                <Button className="w-full py-2 bg-levelup-secondary text-white rounded-lg text-sm font-medium mt-2">
-                  Ver Detalhes
-                </Button>
-              </ChallengeDetailsSheet>
-            </div>
-          </div>
-        );
-
-      case 'invite':
-        return (
-          <div className="bg-card p-4 rounded-lg shadow-sm border border-levelup-secondary/20">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium">{challenge.name}</h3>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                  onClick={() => onAccept?.(challenge.id)}
-                  disabled={isAccepting}
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Aceitar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                  onClick={() => onDecline?.(challenge.id)}
-                  disabled={isDeclining}
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Recusar
-                </Button>
-              </div>
-            </div>
-            
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                <span>Criado por {challenge.creator_name}</span>
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  <span>{challenge.start_date} - {challenge.end_date}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  <span>{challenge.participants} participantes</span>
-                </div>
-                {challenge.activity_name && (
-                  <div className="flex items-center gap-1">
-                    <Dumbbell className="w-3 h-3" />
-                    <span>{challenge.activity_name}</span>
-                  </div>
-                )}
-                {challenge.has_bet && challenge.bet_amount && (
-                  <div className="flex items-center gap-1 text-levelup-accent">
-                    <DollarSign className="w-3 h-3" />
-                    <span>R${challenge.bet_amount}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <ChallengeDetailsSheet challenge={challenge}>
-              <Button variant="outline" className="w-full mt-3 text-sm">
-                Ver Detalhes do Desafio
-              </Button>
-            </ChallengeDetailsSheet>
-          </div>
-        );
-
-      case 'completed':
-        return (
-          <div 
-            className={cn(
-              "bg-card p-3 rounded-lg shadow-sm border-l-4",
-              challenge.wasWinner ? "border-levelup-success" : "border-levelup-danger"
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">{challenge.name}</h3>
-              {challenge.wasWinner && (
-                <div className="bg-levelup-success/20 px-2 py-1 rounded text-xs text-levelup-success font-medium flex items-center">
-                  <Trophy className="w-3 h-3 mr-1" />
-                  Vencedor
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-wrap gap-y-1 mt-2 text-sm text-muted-foreground">
-              <div className="flex items-center w-1/2">
-                <Users className="w-3 h-3 mr-1" />
-                <span>{challenge.participants} participantes</span>
-              </div>
-              <div className="flex items-center w-1/2">
-                <Calendar className="w-3 h-3 mr-1" />
-                <span>{challenge.start_date} - {challenge.end_date}</span>
-              </div>
-              {challenge.activity_name && (
-                <div className="flex items-center w-1/2">
-                  <Dumbbell className="w-3 h-3 mr-1" />
-                  <span>{challenge.activity_name}</span>
-                </div>
-              )}
-              {challenge.has_bet && challenge.bet_amount && (
-                <div className="flex items-center w-full mt-1">
-                  <DollarSign className="w-3 h-3 mr-1 text-levelup-accent" />
-                  <span className={challenge.wasWinner ? "text-levelup-success" : "text-levelup-danger"}>
-                    {challenge.wasWinner 
-                      ? `Ganhou R$${(challenge.bet_amount * (challenge.participants - 1)).toFixed(2)}`
-                      : `Perdeu R$${challenge.bet_amount.toFixed(2)}`
-                    }
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleViewSummary}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                Ver Resumo
-              </Button>
-              <ChallengeDetailsSheet challenge={challenge}>
-                <Button variant="outline" size="sm" className="flex-1">
-                  Estatísticas
-                </Button>
-              </ChallengeDetailsSheet>
-            </div>
-
-            <ChallengeSummaryDialog
-              isOpen={showSummary}
-              onClose={() => setShowSummary(false)}
-              challengeName={challenge.name}
-              summary={summary}
-              isWinner={isWinner}
-              userPoints={userPoints}
-            />
-          </div>
-        );
-    }
-  };
-
-  return renderContent();
+  switch (variant) {
+    case 'active':
+      return <ActiveChallengeCard challenge={challenge} />;
+    
+    case 'invite':
+      return (
+        <InviteChallengeCard 
+          challenge={challenge}
+          onAccept={onAccept}
+          onDecline={onDecline}
+          isAccepting={isAccepting}
+          isDeclining={isDeclining}
+        />
+      );
+    
+    case 'completed':
+      return <CompletedChallengeCard challenge={challenge} />;
+    
+    default:
+      return <ActiveChallengeCard challenge={challenge} />;
+  }
 };
 
 export default ChallengeCard;
