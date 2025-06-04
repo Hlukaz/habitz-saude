@@ -9,6 +9,7 @@ import AchievementsList from '@/components/AchievementsList';
 import ProfileHeader from '@/components/ProfileHeader';
 import ProfileSettings from '@/components/ProfileSettings';
 import ProfilePageHeader from '@/components/ProfilePageHeader';
+import ActivityTypePointsDisplay from '@/components/ActivityTypePointsDisplay';
 import { Trophy } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -94,6 +95,13 @@ const ProfilePage = () => {
           userEmail={user?.email}
           level={level}
           xpToNextLevel={xpToNextLevel}
+        />
+      </div>
+      
+      <div className="px-4 mb-6">
+        <ActivityTypePointsDisplay 
+          activityPoints={activityTypePoints || []}
+          isLoading={activityTypePointsLoading}
         />
       </div>
       
