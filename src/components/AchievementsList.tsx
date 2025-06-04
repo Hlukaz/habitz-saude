@@ -5,18 +5,50 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import AchievementsDialog from '@/components/AchievementsDialog';
 import { Achievement } from '@/types/activityTypes';
+import { ActivityTypePoints } from '@/types/activityTypes';
 import { getIconComponent } from '@/components/achievements/achievementUtils';
 
 interface AchievementsListProps {
   achievements: Achievement[];
   totalPoints: number;
+  activityTypePoints: ActivityTypePoints[];
   className?: string;
 }
 
-const AchievementsList = ({ achievements, totalPoints, className }: AchievementsListProps) => {
+const AchievementsList = ({ achievements, totalPoints, activityTypePoints, className }: AchievementsListProps) => {
+  // Função para calcular o progresso baseado no tipo de conquista
+  const calculateAchievementProgress = (achievement: Achievement) => {
+    // Se for uma conquista genérica ou não tiver categoria específica, usar total de pontos
+    if (achievement.is_generic || achievement.category === 'general') {
+      return Math.min(100, (totalPoints / achievement.required_points) * 100);
+    }
+
+    // Para conquistas específicas de atividade, calcular baseado nos pontos da atividade
+    if (achievement.category === 'activity') {
+      // Buscar os pontos específicos desta atividade
+      const activityPoints = activityTypePoints.find(atp => 
+        atp.activity_name.toLowerCase().includes(achievement.name.toLowerCase()) ||
+        achievement.name.toLowerCase().includes(atp.activity_name.toLowerCase()) ||
+        achievement.description.toLowerCase().includes(atp.activity_name.toLowerCase())
+      );
+      
+      const relevantPoints = activityPoints ? activityPoints.points : 0;
+      return Math.min(100, (relevantPoints / achievement.required_points) * 100);
+    }
+
+    // Para outras categorias (nutrition, streak), usar total por enquanto
+    return Math.min(100, (totalPoints / achievement.required_points) * 100);
+  };
+
+  // Verificar se a conquista está desbloqueada baseado no progresso calculado
+  const isAchievementUnlocked = (achievement: Achievement) => {
+    if (achievement.unlocked) return true;
+    return calculateAchievementProgress(achievement) >= 100;
+  };
+
   // Agrupar conquistas por status (desbloqueadas/bloqueadas)
-  const unlockedAchievements = achievements.filter(a => a.unlocked);
-  const lockedAchievements = achievements.filter(a => !a.unlocked);
+  const unlockedAchievements = achievements.filter(a => isAchievementUnlocked(a));
+  const lockedAchievements = achievements.filter(a => !isAchievementUnlocked(a));
   
   return (
     <div className={cn("space-y-4", className)}>
@@ -76,7 +108,24 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
           <div className="grid grid-cols-2 gap-3">
             {lockedAchievements.map(achievement => {
               const IconComponent = getIconComponent(achievement.icon);
-              const progress = Math.min(100, (totalPoints / achievement.required_points) * 100);
+              const progress = calculateAchievementProgress(achievement);
+              
+              // Calcular pontos atuais baseado no tipo de conquista
+              let currentPoints = 0;
+              let maxPoints = achievement.required_points;
+              
+              if (achievement.is_generic || achievement.category === 'general') {
+                currentPoints = totalPoints;
+              } else if (achievement.category === 'activity') {
+                const activityPoints = activityTypePoints.find(atp => 
+                  atp.activity_name.toLowerCase().includes(achievement.name.toLowerCase()) ||
+                  achievement.name.toLowerCase().includes(atp.activity_name.toLowerCase()) ||
+                  achievement.description.toLowerCase().includes(atp.activity_name.toLowerCase())
+                );
+                currentPoints = activityPoints ? activityPoints.points : 0;
+              } else {
+                currentPoints = totalPoints;
+              }
               
               return (
                 <div
@@ -106,7 +155,7 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
                   <div className="w-full mt-2">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span>Progresso</span>
-                      <span>{totalPoints}/{achievement.required_points} pontos</span>
+                      <span>{currentPoints}/{maxPoints} pontos</span>
                     </div>
                     <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
                       <div 
@@ -132,7 +181,8 @@ const AchievementsList = ({ achievements, totalPoints, className }: Achievements
       <div className="mt-4">
         <AchievementsDialog 
           achievements={achievements} 
-          totalPoints={totalPoints} 
+          totalPoints={totalPoints}
+          activityTypePoints={activityTypePoints}
         />
       </div>
     </div>

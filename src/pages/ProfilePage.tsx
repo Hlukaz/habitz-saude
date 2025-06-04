@@ -174,6 +174,7 @@ const ProfilePage = () => {
         <AchievementsList 
           achievements={achievements} 
           totalPoints={totalPoints}
+          activityTypePoints={activityTypePoints || []}
         />
       </div>
       

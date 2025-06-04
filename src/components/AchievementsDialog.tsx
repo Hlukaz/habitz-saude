@@ -2,7 +2,7 @@
 import React from 'react';
 import { Trophy, Medal, Activity, Apple, Flame, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Achievement } from '@/types/activityTypes';
+import { Achievement, ActivityTypePoints } from '@/types/activityTypes';
 import {
   Dialog,
   DialogContent,
@@ -39,11 +39,12 @@ const mapCategoryToDbCategory = (category: AchievementCategoryType): "activity" 
 interface AchievementsDialogProps {
   achievements: Achievement[];
   totalPoints: number;
+  activityTypePoints: ActivityTypePoints[];
   className?: string;
 }
 
 // Drawer version (mobile)
-const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogProps) => {
+const AchievementsDrawer = ({ achievements, totalPoints, activityTypePoints }: AchievementsDialogProps) => {
   // Combinar conquistas existentes com as pré-definidas
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
@@ -103,6 +104,7 @@ const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogPro
               <AchievementCategoryTab 
                 achievements={categoryAchievements}
                 totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
                 category={key as AchievementCategoryType}
               />
             </TabsContent>
@@ -114,7 +116,7 @@ const AchievementsDrawer = ({ achievements, totalPoints }: AchievementsDialogPro
 };
 
 // Dialog version (desktop)
-const AchievementsModalDialog = ({ achievements, totalPoints }: AchievementsDialogProps) => {
+const AchievementsModalDialog = ({ achievements, totalPoints, activityTypePoints }: AchievementsDialogProps) => {
   // Combinar conquistas existentes com as pré-definidas
   const existingIds = achievements.map(a => a.id);
   const combinedAchievements = [
@@ -174,6 +176,7 @@ const AchievementsModalDialog = ({ achievements, totalPoints }: AchievementsDial
               <AchievementCategoryTab 
                 achievements={categoryAchievements}
                 totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
                 category={key as AchievementCategoryType}
               />
             </TabsContent>
