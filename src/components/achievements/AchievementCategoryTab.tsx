@@ -1,18 +1,20 @@
 
 import React from 'react';
-import { Achievement } from '@/types/activityTypes';
+import { Achievement, ActivityTypePoints } from '@/types/activityTypes';
 import { AchievementItem } from './AchievementItem';
 import { AchievementCategoryType } from './achievementUtils';
 
 interface AchievementCategoryTabProps {
   achievements: Achievement[];
   totalPoints: number;
+  activityTypePoints: ActivityTypePoints[];
   category: AchievementCategoryType;
 }
 
 export const AchievementCategoryTab: React.FC<AchievementCategoryTabProps> = ({ 
   achievements,
   totalPoints,
+  activityTypePoints,
   category
 }) => {
   // Separar as conquistas por níveis
