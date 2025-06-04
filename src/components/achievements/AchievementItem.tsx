@@ -1,13 +1,13 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Achievement } from '@/types/activityTypes';
+import { Achievement, ActivityTypePoints } from '@/types/activityTypes';
 import { getIconComponent } from './achievementUtils';
 
 interface AchievementItemProps {
   achievement: Achievement;
   totalPoints: number;
-  activityTypePoints?: any[];
+  activityTypePoints: ActivityTypePoints[];
 }
 
 export const AchievementItem: React.FC<AchievementItemProps> = ({ 
@@ -29,11 +29,17 @@ export const AchievementItem: React.FC<AchievementItemProps> = ({
       };
     }
 
-    // Para conquistas específicas de atividade, não calcular progresso incorreto
-    if (achievement.category === 'activity') {
+    // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
+    if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
+      // Somar pontos apenas dos tipos de atividade relacionados a esta conquista
+      const specificActivityPoints = activityTypePoints
+        .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
+        .reduce((sum, atp) => sum + atp.points, 0);
+      
+      const progress = Math.min(100, (specificActivityPoints / achievement.required_points) * 100);
       return {
-        progress: achievement.unlocked ? 100 : 0,
-        currentPoints: 0,
+        progress,
+        currentPoints: specificActivityPoints,
         maxPoints: achievement.required_points
       };
     }
@@ -90,12 +96,7 @@ export const AchievementItem: React.FC<AchievementItemProps> = ({
         <div className="w-full mt-2">
           <div className="flex items-center justify-between text-xs mb-1">
             <span>Progresso</span>
-            <span>
-              {achievement.category === 'activity' && !achievement.is_generic 
-                ? `${maxPoints} pontos necessários`
-                : `${currentPoints}/${maxPoints} pontos`
-              }
-            </span>
+            <span>{currentPoints}/{maxPoints} pontos</span>
           </div>
           <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
             <div 

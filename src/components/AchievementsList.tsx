@@ -18,27 +18,42 @@ interface AchievementsListProps {
 const AchievementsList = ({ achievements, totalPoints, activityTypePoints, className }: AchievementsListProps) => {
   // Função para calcular o progresso baseado no tipo de conquista
   const calculateAchievementProgress = (achievement: Achievement) => {
-    // Se for uma conquista genérica ou de categoria geral, usar total de pontos
+    // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
     if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-      return Math.min(100, (totalPoints / achievement.required_points) * 100);
+      return {
+        progress: Math.min(100, (totalPoints / achievement.required_points) * 100),
+        currentPoints: totalPoints,
+        maxPoints: achievement.required_points
+      };
     }
 
-    // Para conquistas específicas de atividade, precisamos buscar na tabela achievement_activities
-    // Por enquanto, como não temos acesso direto a essa tabela no frontend,
-    // vamos usar uma abordagem mais conservadora e só calcular para conquistas genéricas
-    if (achievement.category === 'activity') {
-      // Se não conseguirmos determinar a atividade específica, retornar 0 para evitar matches incorretos
-      return 0;
+    // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
+    if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
+      // Somar pontos apenas dos tipos de atividade relacionados a esta conquista
+      const specificActivityPoints = activityTypePoints
+        .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
+        .reduce((sum, atp) => sum + atp.points, 0);
+      
+      return {
+        progress: Math.min(100, (specificActivityPoints / achievement.required_points) * 100),
+        currentPoints: specificActivityPoints,
+        maxPoints: achievement.required_points
+      };
     }
 
-    // Para nutrition, usar total de pontos por enquanto
-    return Math.min(100, (totalPoints / achievement.required_points) * 100);
+    // Para outras categorias, usar total de pontos
+    return {
+      progress: Math.min(100, (totalPoints / achievement.required_points) * 100),
+      currentPoints: totalPoints,
+      maxPoints: achievement.required_points
+    };
   };
 
   // Verificar se a conquista está desbloqueada baseado no progresso calculado
   const isAchievementUnlocked = (achievement: Achievement) => {
     if (achievement.unlocked) return true;
-    return calculateAchievementProgress(achievement) >= 100;
+    const { progress } = calculateAchievementProgress(achievement);
+    return progress >= 100;
   };
 
   // Agrupar conquistas por status (desbloqueadas/bloqueadas)
@@ -103,21 +118,7 @@ const AchievementsList = ({ achievements, totalPoints, activityTypePoints, class
           <div className="grid grid-cols-2 gap-3">
             {lockedAchievements.map(achievement => {
               const IconComponent = getIconComponent(achievement.icon);
-              const progress = calculateAchievementProgress(achievement);
-              
-              // Para conquistas específicas de atividade que não conseguimos calcular corretamente,
-              // mostrar apenas os pontos necessários
-              let currentPoints = 0;
-              let maxPoints = achievement.required_points;
-              
-              if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-                currentPoints = totalPoints;
-              } else if (achievement.category === 'activity') {
-                // Para atividades específicas, não mostrar progresso incorreto
-                currentPoints = 0;
-              } else {
-                currentPoints = totalPoints;
-              }
+              const { progress, currentPoints, maxPoints } = calculateAchievementProgress(achievement);
               
               return (
                 <div
@@ -147,12 +148,7 @@ const AchievementsList = ({ achievements, totalPoints, activityTypePoints, class
                   <div className="w-full mt-2">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span>Progresso</span>
-                      <span>
-                        {achievement.category === 'activity' && !achievement.is_generic 
-                          ? `${maxPoints} pontos necessários`
-                          : `${currentPoints}/${maxPoints} pontos`
-                        }
-                      </span>
+                      <span>{currentPoints}/{maxPoints} pontos</span>
                     </div>
                     <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
                       <div 

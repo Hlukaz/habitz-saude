@@ -117,7 +117,8 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       category: item.achievement.category || 'general',
       is_generic: item.achievement.is_generic || true,
       unlocked: true,
-      unlocked_at: item.unlocked_at
+      unlocked_at: item.unlocked_at,
+      activity_type_ids: [] // Para conquistas já desbloqueadas, não precisamos dos IDs
     }));
 
     // Criamos uma lista de IDs de conquistas já desbloqueadas
@@ -136,8 +137,8 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
         category: a.category || 'general',
         is_generic: a.is_generic || true,
         unlocked: false,
-        // Include activity type information for better matching
-        activity_types: a.achievement_activities?.map((aa: any) => aa.activity_types) || []
+        // Incluir os IDs dos tipos de atividade relacionados
+        activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
       }));
 
     // Combinamos as duas listas

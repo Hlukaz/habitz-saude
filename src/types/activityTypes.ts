@@ -41,4 +41,5 @@ export type Achievement = {
   tier?: 'bronze' | 'silver' | 'gold';
   category?: 'general' | 'activity' | 'nutrition' | 'streak';
   is_generic?: boolean;
+  activity_type_ids?: string[]; // IDs dos tipos de atividade relacionados
 };
