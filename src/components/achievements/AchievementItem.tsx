@@ -2,57 +2,114 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Achievement } from '@/types/activityTypes';
-import { Progress } from '@/components/ui/progress';
 import { getIconComponent } from './achievementUtils';
 
 interface AchievementItemProps {
   achievement: Achievement;
   totalPoints: number;
+  activityTypePoints?: any[];
 }
 
-export const AchievementItem: React.FC<AchievementItemProps> = ({ achievement, totalPoints }) => {
+export const AchievementItem: React.FC<AchievementItemProps> = ({ 
+  achievement, 
+  totalPoints,
+  activityTypePoints = []
+}) => {
   const IconComponent = getIconComponent(achievement.icon);
-  const isUnlocked = achievement.unlocked;
   
-  // Limitar o progresso para exibir no máximo os pontos necessários
-  const effectivePoints = Math.min(totalPoints, achievement.required_points);
-  const progress = Math.min(100, (effectivePoints / achievement.required_points) * 100);
-  
+  // Calcular progresso baseado no tipo de conquista
+  const calculateProgress = () => {
+    // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
+    if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
+      const progress = Math.min(100, (totalPoints / achievement.required_points) * 100);
+      return {
+        progress,
+        currentPoints: totalPoints,
+        maxPoints: achievement.required_points
+      };
+    }
+
+    // Para conquistas específicas de atividade, não calcular progresso incorreto
+    if (achievement.category === 'activity') {
+      return {
+        progress: achievement.unlocked ? 100 : 0,
+        currentPoints: 0,
+        maxPoints: achievement.required_points
+      };
+    }
+
+    // Para outras categorias, usar total de pontos
+    const progress = Math.min(100, (totalPoints / achievement.required_points) * 100);
+    return {
+      progress,
+      currentPoints: totalPoints,
+      maxPoints: achievement.required_points
+    };
+  };
+
+  const { progress, currentPoints, maxPoints } = calculateProgress();
+  const isUnlocked = achievement.unlocked || progress >= 100;
+
   return (
-    <div className={cn(
-      "flex flex-col p-3 rounded-xl border", 
-      isUnlocked ? "bg-levelup-light border-levelup-accent" : "bg-card border-muted"
-    )}>
-      <div className="flex items-center gap-3 mb-2">
-        <div className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center",
-          isUnlocked ? "bg-levelup-accent text-white" : "bg-muted text-muted-foreground",
-          achievement.tier === 'gold' && isUnlocked && "bg-yellow-400",
-          achievement.tier === 'silver' && isUnlocked && "bg-gray-400",
-          achievement.tier === 'bronze' && isUnlocked && "bg-amber-700"
-        )}>
-          <IconComponent className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-medium text-sm">{achievement.name}</h3>
-          <p className="text-xs text-muted-foreground">{achievement.description}</p>
-        </div>
+    <div
+      className={cn(
+        "bg-card p-3 rounded-lg shadow-sm flex flex-col items-center text-center transition-all",
+        !isUnlocked && "opacity-70",
+        achievement.tier === 'gold' && isUnlocked && "border-2 border-yellow-400",
+        achievement.tier === 'silver' && isUnlocked && "border-2 border-gray-400",
+        achievement.tier === 'bronze' && isUnlocked && "border-2 border-amber-700",
+        achievement.tier === 'gold' && !isUnlocked && "border border-yellow-400",
+        achievement.tier === 'silver' && !isUnlocked && "border border-gray-400",
+        achievement.tier === 'bronze' && !isUnlocked && "border border-amber-700"
+      )}
+    >
+      <div className={cn(
+        "w-12 h-12 rounded-full flex items-center justify-center mb-2",
+        isUnlocked && achievement.tier === 'gold' && "bg-yellow-400 text-white",
+        isUnlocked && achievement.tier === 'silver' && "bg-gray-400 text-white",
+        isUnlocked && achievement.tier === 'bronze' && "bg-amber-700 text-white",
+        isUnlocked && !achievement.tier && "bg-levelup-accent text-white",
+        !isUnlocked && achievement.tier === 'gold' && "bg-yellow-100 text-yellow-400",
+        !isUnlocked && achievement.tier === 'silver' && "bg-gray-100 text-gray-400",
+        !isUnlocked && achievement.tier === 'bronze' && "bg-amber-100 text-amber-700",
+        !isUnlocked && !achievement.tier && "bg-muted text-muted-foreground"
+      )}>
+        <IconComponent className="w-6 h-6" />
       </div>
       
-      {!isUnlocked && (
-        <div className="mt-1">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span>Progresso</span>
-            <span>{effectivePoints}/{achievement.required_points} pontos</span>
-          </div>
-          <Progress value={progress} className="h-1.5" />
-        </div>
-      )}
+      <h3 className="font-medium text-sm mb-1">{achievement.name}</h3>
+      <p className="text-xs text-muted-foreground mb-2">{achievement.description}</p>
       
       {isUnlocked && achievement.unlocked_at && (
-        <p className="text-xs text-levelup-accent mt-1">
+        <span className="text-xs text-levelup-accent">
           Desbloqueado em {new Date(achievement.unlocked_at).toLocaleDateString()}
-        </p>
+        </span>
+      )}
+      
+      {!isUnlocked && (
+        <div className="w-full mt-2">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span>Progresso</span>
+            <span>
+              {achievement.category === 'activity' && !achievement.is_generic 
+                ? `${maxPoints} pontos necessários`
+                : `${currentPoints}/${maxPoints} pontos`
+              }
+            </span>
+          </div>
+          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+            <div 
+              className={cn(
+                "h-full rounded-full transition-all",
+                achievement.tier === 'gold' && "bg-yellow-400",
+                achievement.tier === 'silver' && "bg-gray-400",
+                achievement.tier === 'bronze' && "bg-amber-700",
+                !achievement.tier && "bg-levelup-accent"
+              )}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

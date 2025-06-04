@@ -62,7 +62,7 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
-// Function to fetch user achievements with proper filtering
+// Function to fetch user achievements with activity type information
 export const fetchUserAchievements = async (userId: string): Promise<Achievement[]> => {
   try {
     // Primeiro buscamos conquistas que o usuário já desbloqueou
@@ -88,10 +88,19 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       console.error('Erro ao buscar conquistas desbloqueadas:', unlockedError);
     }
 
-    // Depois buscamos todas as conquistas disponíveis
-    const { data: allAchievements, error: allError } = await supabase
+    // Buscamos todas as conquistas com suas atividades associadas
+    const { data: allAchievementsData, error: allError } = await supabase
       .from('achievements')
-      .select('*');
+      .select(`
+        *,
+        achievement_activities (
+          activity_type_id,
+          activity_types (
+            id,
+            name
+          )
+        )
+      `);
 
     if (allError) {
       throw allError;
@@ -115,7 +124,7 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
     const unlockedIds = unlockedAchievements.map(a => a.id);
 
     // Adicionamos as conquistas que ainda não foram desbloqueadas
-    const lockedAchievements = (allAchievements || [])
+    const lockedAchievements = (allAchievementsData || [])
       .filter((a: any) => !unlockedIds.includes(a.id))
       .map((a: any) => ({
         id: a.id,
@@ -126,7 +135,9 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
         tier: a.tier || 'bronze',
         category: a.category || 'general',
         is_generic: a.is_generic || true,
-        unlocked: false
+        unlocked: false,
+        // Include activity type information for better matching
+        activity_types: a.achievement_activities?.map((aa: any) => aa.activity_types) || []
       }));
 
     // Combinamos as duas listas
