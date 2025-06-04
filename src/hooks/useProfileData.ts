@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,74 +62,79 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
-// Function to fetch user achievements with new fields
+// Function to fetch user achievements with proper filtering
 export const fetchUserAchievements = async (userId: string): Promise<Achievement[]> => {
-  // Primeiro buscamos conquistas que o usuário já desbloqueou
-  const { data: unlockedData, error: unlockedError } = await supabase
-    .from('user_achievements')
-    .select(`
-      id,
-      unlocked_at,
-      achievement:achievement_id (
+  try {
+    // Primeiro buscamos conquistas que o usuário já desbloqueou
+    const { data: unlockedData, error: unlockedError } = await supabase
+      .from('user_achievements')
+      .select(`
         id,
-        name,
-        description,
-        icon,
-        required_points,
-        tier,
-        category,
-        is_generic
-      )
-    `)
-    .eq('user_id', userId);
+        unlocked_at,
+        achievement:achievement_id (
+          id,
+          name,
+          description,
+          icon,
+          required_points,
+          tier,
+          category,
+          is_generic
+        )
+      `)
+      .eq('user_id', userId);
 
-  if (unlockedError) {
-    throw unlockedError;
-  }
+    if (unlockedError) {
+      console.error('Erro ao buscar conquistas desbloqueadas:', unlockedError);
+    }
 
-  // Depois buscamos todas as conquistas disponíveis para mostrar também as bloqueadas
-  const { data: allAchievements, error: allError } = await supabase
-    .from('achievements')
-    .select('*');
+    // Depois buscamos todas as conquistas disponíveis
+    const { data: allAchievements, error: allError } = await supabase
+      .from('achievements')
+      .select('*');
 
-  if (allError) {
-    throw allError;
-  }
+    if (allError) {
+      throw allError;
+    }
 
-  // Mapeamos as conquistas desbloqueadas
-  const unlockedAchievements = unlockedData.map((item: any) => ({
-    id: item.achievement.id,
-    name: item.achievement.name,
-    description: item.achievement.description,
-    icon: item.achievement.icon,
-    required_points: item.achievement.required_points,
-    tier: item.achievement.tier || 'bronze',
-    category: item.achievement.category || 'general',
-    is_generic: item.achievement.is_generic || true,
-    unlocked: true,
-    unlocked_at: item.unlocked_at
-  }));
-
-  // Criamos uma lista de IDs de conquistas já desbloqueadas
-  const unlockedIds = unlockedAchievements.map(a => a.id);
-
-  // Adicionamos as conquistas que ainda não foram desbloqueadas
-  const lockedAchievements = allAchievements
-    .filter((a: any) => !unlockedIds.includes(a.id))
-    .map((a: any) => ({
-      id: a.id,
-      name: a.name,
-      description: a.description,
-      icon: a.icon,
-      required_points: a.required_points,
-      tier: a.tier || 'bronze',
-      category: a.category || 'general',
-      is_generic: a.is_generic || true,
-      unlocked: false
+    // Mapeamos as conquistas desbloqueadas
+    const unlockedAchievements = (unlockedData || []).map((item: any) => ({
+      id: item.achievement.id,
+      name: item.achievement.name,
+      description: item.achievement.description,
+      icon: item.achievement.icon,
+      required_points: item.achievement.required_points,
+      tier: item.achievement.tier || 'bronze',
+      category: item.achievement.category || 'general',
+      is_generic: item.achievement.is_generic || true,
+      unlocked: true,
+      unlocked_at: item.unlocked_at
     }));
 
-  // Combinamos as duas listas
-  return [...unlockedAchievements, ...lockedAchievements];
+    // Criamos uma lista de IDs de conquistas já desbloqueadas
+    const unlockedIds = unlockedAchievements.map(a => a.id);
+
+    // Adicionamos as conquistas que ainda não foram desbloqueadas
+    const lockedAchievements = (allAchievements || [])
+      .filter((a: any) => !unlockedIds.includes(a.id))
+      .map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        icon: a.icon,
+        required_points: a.required_points,
+        tier: a.tier || 'bronze',
+        category: a.category || 'general',
+        is_generic: a.is_generic || true,
+        unlocked: false
+      }));
+
+    // Combinamos as duas listas
+    return [...unlockedAchievements, ...lockedAchievements];
+  } catch (error) {
+    console.error('Erro ao buscar conquistas:', error);
+    return [];
+  }
 };
 
 // Custom hook for user profile data

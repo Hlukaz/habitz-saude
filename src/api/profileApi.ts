@@ -31,6 +31,145 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
+// Check and unlock achievements based on user's total points
+export const checkAndUnlockAchievements = async (userId: string, totalPoints: number): Promise<void> => {
+  try {
+    // Buscar todas as conquistas que o usuário ainda não desbloqueou
+    const { data: availableAchievements, error: achievementsError } = await supabase
+      .from('achievements')
+      .select(`
+        id,
+        name,
+        required_points,
+        category,
+        is_generic
+      `)
+      .lte('required_points', totalPoints);
+
+    if (achievementsError) {
+      console.error('Erro ao buscar conquistas:', achievementsError);
+      return;
+    }
+
+    if (!availableAchievements || availableAchievements.length === 0) {
+      return;
+    }
+
+    // Buscar conquistas já desbloqueadas pelo usuário
+    const { data: unlockedAchievements, error: unlockedError } = await supabase
+      .from('user_achievements')
+      .select('achievement_id')
+      .eq('user_id', userId);
+
+    if (unlockedError) {
+      console.error('Erro ao buscar conquistas desbloqueadas:', unlockedError);
+      return;
+    }
+
+    const unlockedIds = unlockedAchievements?.map(ua => ua.achievement_id) || [];
+
+    // Filtrar conquistas que ainda não foram desbloqueadas
+    const newAchievements = availableAchievements.filter(
+      achievement => !unlockedIds.includes(achievement.id)
+    );
+
+    // Desbloquear novas conquistas
+    if (newAchievements.length > 0) {
+      const achievementsToInsert = newAchievements.map(achievement => ({
+        user_id: userId,
+        achievement_id: achievement.id,
+        unlocked_at: new Date().toISOString()
+      }));
+
+      const { error: insertError } = await supabase
+        .from('user_achievements')
+        .insert(achievementsToInsert);
+
+      if (insertError) {
+        console.error('Erro ao desbloquear conquistas:', insertError);
+      } else {
+        console.log(`${newAchievements.length} novas conquistas desbloqueadas para o usuário ${userId}`);
+      }
+    }
+  } catch (error) {
+    console.error('Erro na verificação de conquistas:', error);
+  }
+};
+
+// Check and unlock specific activity achievements
+export const checkActivitySpecificAchievements = async (
+  userId: string, 
+  activityTypeId: string, 
+  activityPoints: number
+): Promise<void> => {
+  try {
+    // Buscar conquistas específicas para este tipo de atividade
+    const { data: activityAchievements, error: activityError } = await supabase
+      .from('achievement_activities')
+      .select(`
+        achievement:achievements!inner (
+          id,
+          name,
+          required_points,
+          category,
+          is_generic
+        )
+      `)
+      .eq('activity_type_id', activityTypeId);
+
+    if (activityError) {
+      console.error('Erro ao buscar conquistas de atividade:', activityError);
+      return;
+    }
+
+    if (!activityAchievements || activityAchievements.length === 0) {
+      return;
+    }
+
+    // Buscar conquistas já desbloqueadas pelo usuário
+    const { data: unlockedAchievements, error: unlockedError } = await supabase
+      .from('user_achievements')
+      .select('achievement_id')
+      .eq('user_id', userId);
+
+    if (unlockedError) {
+      console.error('Erro ao buscar conquistas desbloqueadas:', unlockedError);
+      return;
+    }
+
+    const unlockedIds = unlockedAchievements?.map(ua => ua.achievement_id) || [];
+
+    // Filtrar conquistas que o usuário pode desbloquear
+    const eligibleAchievements = activityAchievements.filter(item => {
+      const achievement = item.achievement;
+      return achievement && 
+             !unlockedIds.includes(achievement.id) &&
+             activityPoints >= achievement.required_points;
+    });
+
+    // Desbloquear novas conquistas específicas
+    if (eligibleAchievements.length > 0) {
+      const achievementsToInsert = eligibleAchievements.map(item => ({
+        user_id: userId,
+        achievement_id: item.achievement.id,
+        unlocked_at: new Date().toISOString()
+      }));
+
+      const { error: insertError } = await supabase
+        .from('user_achievements')
+        .insert(achievementsToInsert);
+
+      if (insertError) {
+        console.error('Erro ao desbloquear conquistas específicas:', insertError);
+      } else {
+        console.log(`${eligibleAchievements.length} conquistas específicas desbloqueadas`);
+      }
+    }
+  } catch (error) {
+    console.error('Erro na verificação de conquistas específicas:', error);
+  }
+};
+
 // Update user points and register check-in
 export const updateUserPoints = async (
   userId: string, 
@@ -67,11 +206,13 @@ export const updateUserPoints = async (
       throw fetchError;
     }
 
+    let newActivityPoints = 1;
     if (existingPoints) {
       // Update existing record
+      newActivityPoints = existingPoints.points + 1;
       const { error: updateError } = await supabase
         .from('user_activity_points')
-        .update({ points: existingPoints.points + 1 })
+        .update({ points: newActivityPoints })
         .eq('id', existingPoints.id);
         
       if (updateError) {
@@ -91,8 +232,12 @@ export const updateUserPoints = async (
         throw insertError;
       }
     }
+
+    // Check activity-specific achievements
+    await checkActivitySpecificAchievements(userId, activityTypeId, newActivityPoints);
   }
 
+  // Update profile
   const { data, error } = await supabase
     .from('profiles')
     .update({ 
@@ -106,9 +251,16 @@ export const updateUserPoints = async (
     throw error;
   }
 
-  // After updating points, check for achievements using the database function
-  if (type === 'activity' && activityTypeId) {
-    await checkActivityAchievementsDb(userId, activityTypeId);
+  // Calcular total de pontos e verificar conquistas gerais
+  const { data: allActivityPoints, error: pointsError } = await supabase
+    .from('user_activity_points')
+    .select('points')
+    .eq('user_id', userId);
+
+  if (!pointsError && allActivityPoints) {
+    const totalPoints = allActivityPoints.reduce((sum, item) => sum + item.points, 0);
+    // Check general achievements based on total points
+    await checkAndUnlockAchievements(userId, totalPoints);
   }
 
   return {
