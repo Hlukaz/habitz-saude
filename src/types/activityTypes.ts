@@ -42,4 +42,5 @@ export type Achievement = {
   category?: 'general' | 'activity' | 'nutrition' | 'streak';
   is_generic?: boolean;
   activity_type_ids?: string[]; // IDs dos tipos de atividade relacionados
+  current_points?: number; // Pontos atuais para esta conquista específica
 };

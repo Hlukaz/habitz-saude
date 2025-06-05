@@ -495,6 +495,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievement_points: {
+        Row: {
+          achievement_id: string
+          activity_type_id: string | null
+          created_at: string
+          current_points: number
+          id: string
+          required_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          activity_type_id?: string | null
+          created_at?: string
+          current_points?: number
+          id?: string
+          required_points: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          activity_type_id?: string | null
+          created_at?: string
+          current_points?: number
+          id?: string
+          required_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievement_points_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievement_points_activity_type_id_fkey"
+            columns: ["activity_type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_achievements: {
         Row: {
           achievement_id: string

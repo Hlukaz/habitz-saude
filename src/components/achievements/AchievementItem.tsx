@@ -17,43 +17,25 @@ export const AchievementItem: React.FC<AchievementItemProps> = ({
 }) => {
   const IconComponent = getIconComponent(achievement.icon);
   
-  // Calcular progresso baseado no tipo de conquista
-  const calculateProgress = () => {
+  // Usar pontos individuais da conquista se disponível, senão calcular baseado no tipo
+  const currentPoints = achievement.current_points ?? (() => {
     // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
     if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-      const progress = Math.min(100, (totalPoints / achievement.required_points) * 100);
-      return {
-        progress,
-        currentPoints: totalPoints,
-        maxPoints: achievement.required_points
-      };
+      return totalPoints;
     }
 
     // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
     if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
-      // Somar pontos apenas dos tipos de atividade relacionados a esta conquista
-      const specificActivityPoints = activityTypePoints
+      return activityTypePoints
         .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
         .reduce((sum, atp) => sum + atp.points, 0);
-      
-      const progress = Math.min(100, (specificActivityPoints / achievement.required_points) * 100);
-      return {
-        progress,
-        currentPoints: specificActivityPoints,
-        maxPoints: achievement.required_points
-      };
     }
 
     // Para outras categorias, usar total de pontos
-    const progress = Math.min(100, (totalPoints / achievement.required_points) * 100);
-    return {
-      progress,
-      currentPoints: totalPoints,
-      maxPoints: achievement.required_points
-    };
-  };
+    return totalPoints;
+  })();
 
-  const { progress, currentPoints, maxPoints } = calculateProgress();
+  const progress = Math.min(100, (currentPoints / achievement.required_points) * 100);
   const isUnlocked = achievement.unlocked || progress >= 100;
 
   return (
@@ -96,7 +78,7 @@ export const AchievementItem: React.FC<AchievementItemProps> = ({
         <div className="w-full mt-2">
           <div className="flex items-center justify-between text-xs mb-1">
             <span>Progresso</span>
-            <span>{currentPoints}/{maxPoints} pontos</span>
+            <span>{currentPoints}/{achievement.required_points} pontos</span>
           </div>
           <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
             <div 

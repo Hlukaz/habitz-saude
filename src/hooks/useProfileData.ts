@@ -62,10 +62,33 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
-// Function to fetch user achievements with activity type information
+// Function to fetch user achievements with individual progress tracking
 export const fetchUserAchievements = async (userId: string): Promise<Achievement[]> => {
   try {
-    // Primeiro buscamos conquistas que o usuário já desbloqueou
+    // Buscar conquistas com seus pontos individuais
+    const { data: achievementsWithPoints, error: achievementsError } = await supabase
+      .from('achievements')
+      .select(`
+        *,
+        user_achievement_points!inner (
+          current_points,
+          required_points
+        ),
+        achievement_activities (
+          activity_type_id,
+          activity_types (
+            id,
+            name
+          )
+        )
+      `)
+      .eq('user_achievement_points.user_id', userId);
+
+    if (achievementsError) {
+      console.error('Erro ao buscar conquistas com pontos:', achievementsError);
+    }
+
+    // Buscar conquistas já desbloqueadas
     const { data: unlockedData, error: unlockedError } = await supabase
       .from('user_achievements')
       .select(`
@@ -88,8 +111,8 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       console.error('Erro ao buscar conquistas desbloqueadas:', unlockedError);
     }
 
-    // Buscamos todas as conquistas com suas atividades associadas
-    const { data: allAchievementsData, error: allError } = await supabase
+    // Buscar todas as conquistas disponíveis
+    const { data: allAchievements, error: allError } = await supabase
       .from('achievements')
       .select(`
         *,
@@ -106,7 +129,7 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       throw allError;
     }
 
-    // Mapeamos as conquistas desbloqueadas
+    // Mapear conquistas desbloqueadas
     const unlockedAchievements = (unlockedData || []).map((item: any) => ({
       id: item.achievement.id,
       name: item.achievement.name,
@@ -118,15 +141,32 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       is_generic: item.achievement.is_generic || true,
       unlocked: true,
       unlocked_at: item.unlocked_at,
-      activity_type_ids: [] // Para conquistas já desbloqueadas, não precisamos dos IDs
+      current_points: item.achievement.required_points, // Conquista desbloqueada = pontos completos
+      activity_type_ids: []
     }));
 
-    // Criamos uma lista de IDs de conquistas já desbloqueadas
     const unlockedIds = unlockedAchievements.map(a => a.id);
 
-    // Adicionamos as conquistas que ainda não foram desbloqueadas
-    const lockedAchievements = (allAchievementsData || [])
-      .filter((a: any) => !unlockedIds.includes(a.id))
+    // Mapear conquistas com progresso
+    const achievementsWithProgress = (achievementsWithPoints || []).map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      icon: a.icon,
+      required_points: a.required_points,
+      tier: a.tier || 'bronze',
+      category: a.category || 'general',
+      is_generic: a.is_generic || true,
+      unlocked: unlockedIds.includes(a.id),
+      unlocked_at: unlockedIds.includes(a.id) ? unlockedAchievements.find(ua => ua.id === a.id)?.unlocked_at : undefined,
+      current_points: a.user_achievement_points?.[0]?.current_points || 0,
+      activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
+    }));
+
+    // Adicionar conquistas que ainda não têm progresso
+    const progressIds = achievementsWithProgress.map(a => a.id);
+    const remainingAchievements = (allAchievements || [])
+      .filter((a: any) => !progressIds.includes(a.id) && !unlockedIds.includes(a.id))
       .map((a: any) => ({
         id: a.id,
         name: a.name,
@@ -137,12 +177,11 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
         category: a.category || 'general',
         is_generic: a.is_generic || true,
         unlocked: false,
-        // Incluir os IDs dos tipos de atividade relacionados
+        current_points: 0,
         activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
       }));
 
-    // Combinamos as duas listas
-    return [...unlockedAchievements, ...lockedAchievements];
+    return [...unlockedAchievements, ...achievementsWithProgress, ...remainingAchievements];
   } catch (error) {
     console.error('Erro ao buscar conquistas:', error);
     return [];

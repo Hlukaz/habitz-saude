@@ -16,35 +16,29 @@ interface AchievementsListProps {
 }
 
 const AchievementsList = ({ achievements, totalPoints, activityTypePoints, className }: AchievementsListProps) => {
-  // Função para calcular o progresso baseado no tipo de conquista
+  // Função para calcular o progresso baseado nos pontos individuais
   const calculateAchievementProgress = (achievement: Achievement) => {
-    // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
-    if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-      return {
-        progress: Math.min(100, (totalPoints / achievement.required_points) * 100),
-        currentPoints: totalPoints,
-        maxPoints: achievement.required_points
-      };
-    }
+    // Usar pontos individuais da conquista se disponível
+    const currentPoints = achievement.current_points ?? (() => {
+      // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
+      if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
+        return totalPoints;
+      }
 
-    // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
-    if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
-      // Somar pontos apenas dos tipos de atividade relacionados a esta conquista
-      const specificActivityPoints = activityTypePoints
-        .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
-        .reduce((sum, atp) => sum + atp.points, 0);
-      
-      return {
-        progress: Math.min(100, (specificActivityPoints / achievement.required_points) * 100),
-        currentPoints: specificActivityPoints,
-        maxPoints: achievement.required_points
-      };
-    }
+      // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
+      if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
+        return activityTypePoints
+          .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
+          .reduce((sum, atp) => sum + atp.points, 0);
+      }
 
-    // Para outras categorias, usar total de pontos
+      // Para outras categorias, usar total de pontos
+      return totalPoints;
+    })();
+
     return {
-      progress: Math.min(100, (totalPoints / achievement.required_points) * 100),
-      currentPoints: totalPoints,
+      progress: Math.min(100, (currentPoints / achievement.required_points) * 100),
+      currentPoints,
       maxPoints: achievement.required_points
     };
   };
