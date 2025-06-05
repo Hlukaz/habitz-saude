@@ -34,7 +34,8 @@ export const AchievementCategoryTab: React.FC<AchievementCategoryTabProps> = ({
               <AchievementItem 
                 key={achievement.id} 
                 achievement={achievement} 
-                totalPoints={totalPoints} 
+                totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
               />
             ))}
           </div>
@@ -50,7 +51,8 @@ export const AchievementCategoryTab: React.FC<AchievementCategoryTabProps> = ({
               <AchievementItem 
                 key={achievement.id} 
                 achievement={achievement} 
-                totalPoints={totalPoints} 
+                totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
               />
             ))}
           </div>
@@ -66,7 +68,8 @@ export const AchievementCategoryTab: React.FC<AchievementCategoryTabProps> = ({
               <AchievementItem 
                 key={achievement.id} 
                 achievement={achievement} 
-                totalPoints={totalPoints} 
+                totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
               />
             ))}
           </div>
@@ -82,7 +85,8 @@ export const AchievementCategoryTab: React.FC<AchievementCategoryTabProps> = ({
               <AchievementItem 
                 key={achievement.id} 
                 achievement={achievement} 
-                totalPoints={totalPoints} 
+                totalPoints={totalPoints}
+                activityTypePoints={activityTypePoints}
               />
             ))}
           </div>
