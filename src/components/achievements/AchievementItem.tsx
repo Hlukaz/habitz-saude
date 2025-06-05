@@ -3,6 +3,8 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Achievement, ActivityTypePoints } from '@/types/activityTypes';
 import { getIconComponent } from './achievementUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface AchievementItemProps {
   achievement: Achievement;
@@ -15,26 +17,36 @@ export const AchievementItem: React.FC<AchievementItemProps> = ({
   totalPoints,
   activityTypePoints = []
 }) => {
+  const { user } = useAuth();
   const IconComponent = getIconComponent(achievement.icon);
   
   // Usar pontos individuais da conquista se disponível, senão calcular baseado no tipo
-  const currentPoints = achievement.current_points ?? (() => {
-    // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
-    if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-      return totalPoints;
+  const getCurrentPoints = () => {
+    if (achievement.current_points !== undefined && achievement.current_points !== null) {
+      return achievement.current_points;
     }
 
-    // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
-    if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
+    // Calcular baseado na categoria
+    if (achievement.category === 'nutrition') {
+      // Para conquistas de nutrição, seria ideal buscar a contagem de check-ins
+      // Por enquanto, vamos retornar 0 e deixar que seja atualizado em tempo real
+      return 0;
+    } else if (achievement.category === 'streak') {
+      // Para conquistas de streak, seria ideal buscar o streak atual
+      // Por enquanto, vamos retornar 0 e deixar que seja atualizado em tempo real
+      return 0;
+    } else if (achievement.is_generic || achievement.category === 'general') {
+      return totalPoints;
+    } else if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
       return activityTypePoints
         .filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id))
         .reduce((sum, atp) => sum + atp.points, 0);
     }
 
-    // Para outras categorias, usar total de pontos
     return totalPoints;
-  })();
+  };
 
+  const currentPoints = getCurrentPoints();
   const progress = Math.min(100, (currentPoints / achievement.required_points) * 100);
   const isUnlocked = achievement.unlocked || progress >= 100;
 

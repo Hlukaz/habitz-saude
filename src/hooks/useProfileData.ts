@@ -62,9 +62,39 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
   };
 };
 
+// Function to fetch user nutrition check-ins count
+const fetchUserNutritionCount = async (userId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('user_checkins')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .eq('type', 'nutrition');
+
+  if (error) {
+    console.error('Erro ao buscar contagem de nutrição:', error);
+    return 0;
+  }
+
+  return count || 0;
+};
+
 // Function to fetch user achievements with individual progress tracking
 export const fetchUserAchievements = async (userId: string): Promise<Achievement[]> => {
   try {
+    // Buscar perfil do usuário para obter streak
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('streak')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.error('Erro ao buscar perfil:', profileError);
+    }
+
+    // Buscar contagem de check-ins de nutrição
+    const nutritionCount = await fetchUserNutritionCount(userId);
+
     // Buscar conquistas com seus pontos individuais
     const { data: achievementsWithPoints, error: achievementsError } = await supabase
       .from('achievements')
@@ -163,23 +193,34 @@ export const fetchUserAchievements = async (userId: string): Promise<Achievement
       activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
     }));
 
-    // Adicionar conquistas que ainda não têm progresso
+    // Adicionar conquistas que ainda não têm progresso mas calcular progresso baseado na categoria
     const progressIds = achievementsWithProgress.map(a => a.id);
     const remainingAchievements = (allAchievements || [])
       .filter((a: any) => !progressIds.includes(a.id) && !unlockedIds.includes(a.id))
-      .map((a: any) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        icon: a.icon,
-        required_points: a.required_points,
-        tier: a.tier || 'bronze',
-        category: a.category || 'general',
-        is_generic: a.is_generic || true,
-        unlocked: false,
-        current_points: 0,
-        activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
-      }));
+      .map((a: any) => {
+        let currentPoints = 0;
+        
+        // Calcular pontos atuais baseado na categoria
+        if (a.category === 'nutrition') {
+          currentPoints = nutritionCount;
+        } else if (a.category === 'streak') {
+          currentPoints = userProfile?.streak || 0;
+        }
+        
+        return {
+          id: a.id,
+          name: a.name,
+          description: a.description,
+          icon: a.icon,
+          required_points: a.required_points,
+          tier: a.tier || 'bronze',
+          category: a.category || 'general',
+          is_generic: a.is_generic || true,
+          unlocked: false,
+          current_points: currentPoints,
+          activity_type_ids: a.achievement_activities?.map((aa: any) => aa.activity_type_id) || []
+        };
+      });
 
     return [...unlockedAchievements, ...achievementsWithProgress, ...remainingAchievements];
   } catch (error) {

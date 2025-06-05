@@ -7,6 +7,8 @@ import AchievementsDialog from '@/components/AchievementsDialog';
 import { Achievement } from '@/types/activityTypes';
 import { ActivityTypePoints } from '@/types/activityTypes';
 import { getIconComponent } from '@/components/achievements/achievementUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface AchievementsListProps {
   achievements: Achievement[];
@@ -21,23 +23,49 @@ const AchievementsList = ({
   activityTypePoints,
   className
 }: AchievementsListProps) => {
+  const { user } = useAuth();
+
   // Função para calcular o progresso baseado nos pontos individuais
-  const calculateAchievementProgress = (achievement: Achievement) => {
-    // Usar pontos individuais da conquista se disponível
-    const currentPoints = achievement.current_points ?? (() => {
-      // Para conquistas genéricas ou de categoria geral/streak, usar total de pontos
-      if (achievement.is_generic || achievement.category === 'general' || achievement.category === 'streak') {
-        return totalPoints;
-      }
+  const calculateAchievementProgress = async (achievement: Achievement) => {
+    let currentPoints = achievement.current_points ?? 0;
 
-      // Para conquistas específicas de atividade, usar apenas os pontos da atividade específica
-      if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
-        return activityTypePoints.filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id)).reduce((sum, atp) => sum + atp.points, 0);
+    // Se current_points não estiver definido, calcular baseado na categoria
+    if (achievement.current_points === undefined || achievement.current_points === null) {
+      if (achievement.category === 'nutrition') {
+        // Buscar contagem de check-ins de nutrição
+        try {
+          const { count } = await supabase
+            .from('user_checkins')
+            .select('*', { count: 'exact' })
+            .eq('user_id', user?.id)
+            .eq('type', 'nutrition');
+          currentPoints = count || 0;
+        } catch (error) {
+          console.error('Erro ao buscar check-ins de nutrição:', error);
+          currentPoints = 0;
+        }
+      } else if (achievement.category === 'streak') {
+        // Buscar streak atual do usuário
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('streak')
+            .eq('id', user?.id)
+            .single();
+          currentPoints = profile?.streak || 0;
+        } catch (error) {
+          console.error('Erro ao buscar streak:', error);
+          currentPoints = 0;
+        }
+      } else if (achievement.is_generic || achievement.category === 'general') {
+        currentPoints = totalPoints;
+      } else if (achievement.category === 'activity' && achievement.activity_type_ids && achievement.activity_type_ids.length > 0) {
+        currentPoints = activityTypePoints.filter(atp => achievement.activity_type_ids!.includes(atp.activity_type_id)).reduce((sum, atp) => sum + atp.points, 0);
+      } else {
+        currentPoints = totalPoints;
       }
+    }
 
-      // Para outras categorias, usar total de pontos
-      return totalPoints;
-    })();
     return {
       progress: Math.min(100, currentPoints / achievement.required_points * 100),
       currentPoints,
@@ -45,11 +73,13 @@ const AchievementsList = ({
     };
   };
 
-  // Verificar se a conquista está desbloqueada baseado no progresso calculado
+  // Verificar se a conquista está desbloqueada
   const isAchievementUnlocked = (achievement: Achievement) => {
     if (achievement.unlocked) return true;
-    const { progress } = calculateAchievementProgress(achievement);
-    return progress >= 100;
+    
+    // Para conquistas não desbloqueadas, verificar se current_points >= required_points
+    const currentPoints = achievement.current_points ?? 0;
+    return currentPoints >= achievement.required_points;
   };
 
   // Agrupar conquistas por status (desbloqueadas/bloqueadas)
@@ -110,7 +140,8 @@ const AchievementsList = ({
           <div className="grid grid-cols-2 gap-2">
             {lockedAchievements.slice(0, 4).map((achievement) => {
               const IconComponent = getIconComponent(achievement.icon);
-              const { progress, currentPoints, maxPoints } = calculateAchievementProgress(achievement);
+              const currentPoints = achievement.current_points ?? 0;
+              const progress = Math.min(100, currentPoints / achievement.required_points * 100);
               
               return (
                 <div
@@ -142,7 +173,7 @@ const AchievementsList = ({
                     />
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{currentPoints}/{maxPoints}</span>
+                    <span>{currentPoints}/{achievement.required_points}</span>
                     <span>{progress.toFixed(0)}%</span>
                   </div>
                 </div>
