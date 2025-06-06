@@ -5,8 +5,8 @@ import { ChallengeWithDetails } from '../useChallenges';
 
 const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDetails[]> => {
   try {
-    const now = new Date().toISOString();
-    
+    console.log('Fetching completed challenges for user:', userId);
+
     // Get challenges where the user is a participant with 'accepted' status
     const { data: participantData, error: participantError } = await supabase
       .from('challenge_participants')
@@ -25,6 +25,7 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
     }
 
     if (!participantData || participantData.length === 0) {
+      console.log('No completed challenge participants found');
       return [];
     }
 
@@ -45,19 +46,37 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
         )
       `)
       .in('id', challengeIds)
-      .lt('end_date', now);
+      .eq('status', 'completed');
 
     if (challengesError) {
       console.error('Error fetching completed challenges:', challengesError);
       return [];
     }
 
+    if (!challenges || challenges.length === 0) {
+      console.log('No completed challenges found');
+      return [];
+    }
+
+    // Get challenge summaries to determine winners
+    const { data: summaries, error: summariesError } = await supabase
+      .from('challenge_summaries')
+      .select('*')
+      .in('challenge_id', challenges.map(c => c.id));
+
+    if (summariesError) {
+      console.error('Error fetching challenge summaries:', summariesError);
+    }
+
     // Map challenges to include additional details
-    const completedChallenges = (challenges || []).map(challenge => {
-      const activityName = challenge.activity_types?.name || null;
+    const completedChallenges = challenges.map(challenge => {
+      const activityName = challenge.activity_types?.name || 'Qualquer Atividade';
       const creatorProfile = challenge.profiles as any;
-      const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Unknown';
-      const wasWinner = Math.random() > 0.5; // Temporary simulation
+      const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Usuário';
+      
+      // Check if user was the winner from challenge summaries
+      const summary = summaries?.find(s => s.challenge_id === challenge.id);
+      const wasWinner = summary?.winner_user_id === userId;
       
       return {
         ...challenge,
@@ -83,6 +102,7 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
       challenge.participants = count || 0;
     }
 
+    console.log('Final completed challenges:', completedChallenges);
     return completedChallenges;
   } catch (error) {
     console.error('Error in fetchCompletedChallenges:', error);
@@ -105,7 +125,8 @@ export const useCompletedChallenges = (userId: string | undefined) => {
   } = useQuery({
     queryKey: ['completedChallenges', userId],
     queryFn: () => userId ? fetchCompletedChallenges(userId) : Promise.resolve([]),
-    enabled: !!userId
+    enabled: !!userId,
+    refetchInterval: 30000 // Refetch every 30 seconds to catch newly completed challenges
   });
 
   return {

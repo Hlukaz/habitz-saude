@@ -33,7 +33,7 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
     const challengeIds = participantData.map(participant => participant.challenge_id);
     console.log('Challenge IDs:', challengeIds);
 
-    // Get the challenge details with activity types
+    // Get the challenge details with activity types - only active challenges
     const { data: challenges, error: challengesError } = await supabase
       .from('challenges')
       .select(`
@@ -42,7 +42,8 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
           name
         )
       `)
-      .in('id', challengeIds);
+      .in('id', challengeIds)
+      .eq('status', 'active'); // Only get active challenges
 
     if (challengesError) {
       console.error('Error fetching active challenges:', challengesError);
@@ -130,7 +131,8 @@ export const useActiveChallenges = (userId: string | undefined) => {
   } = useQuery({
     queryKey: ['activeChallenges', userId],
     queryFn: () => userId ? fetchUserActiveChallenges(userId) : Promise.resolve([]),
-    enabled: !!userId
+    enabled: !!userId,
+    refetchInterval: 30000 // Refetch every 30 seconds to catch status changes
   });
 
   return {
