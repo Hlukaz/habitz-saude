@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ChallengeWithDetails } from '../useChallenges';
@@ -32,10 +31,8 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
     // Get the challenge IDs where the user is a participant
     const challengeIds = participantData.map(participant => participant.challenge_id);
 
-    // Get challenges that are either marked as completed OR have ended
-    const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-    
-    const { data: challenges, error: challengesError } = await supabase
+    // First, get all challenges the user participates in
+    const { data: allChallenges, error: challengesError } = await supabase
       .from('challenges')
       .select(`
         *,
@@ -47,31 +44,48 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
           full_name
         )
       `)
-      .in('id', challengeIds)
-      .or(`status.eq.completed,end_date.lt.${currentDate}`); // Get completed challenges OR challenges that have ended
+      .in('id', challengeIds);
 
     if (challengesError) {
-      console.error('Error fetching completed challenges:', challengesError);
+      console.error('Error fetching challenges:', challengesError);
       return [];
     }
 
-    if (!challenges || challenges.length === 0) {
-      console.log('No completed challenges found');
+    if (!allChallenges || allChallenges.length === 0) {
+      console.log('No challenges found');
       return [];
     }
+
+    // Filter for completed challenges (status = 'completed' OR end_date has passed)
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    const completedChallenges = allChallenges.filter(challenge => {
+      const endDate = new Date(challenge.end_date);
+      endDate.setHours(23, 59, 59, 999); // Set to end of day for accurate comparison
+      
+      const isCompleted = challenge.status === 'completed';
+      const hasEnded = endDate < currentDate;
+      
+      console.log(`Challenge ${challenge.name}: status=${challenge.status}, endDate=${challenge.end_date}, hasEnded=${hasEnded}, isCompleted=${isCompleted}`);
+      
+      return isCompleted || hasEnded;
+    });
+
+    console.log('Filtered completed challenges:', completedChallenges);
 
     // Get challenge summaries to determine winners
     const { data: summaries, error: summariesError } = await supabase
       .from('challenge_summaries')
       .select('*')
-      .in('challenge_id', challenges.map(c => c.id));
+      .in('challenge_id', completedChallenges.map(c => c.id));
 
     if (summariesError) {
       console.error('Error fetching challenge summaries:', summariesError);
     }
 
     // Map challenges to include additional details
-    const completedChallenges = challenges.map(challenge => {
+    const finalCompletedChallenges = completedChallenges.map(challenge => {
       const activityName = challenge.activity_types?.name || 'Qualquer Atividade';
       const creatorProfile = challenge.profiles as any;
       const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Usuário';
@@ -94,7 +108,7 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
     });
 
     // Fetch participant count for each challenge
-    for (const challenge of completedChallenges) {
+    for (const challenge of finalCompletedChallenges) {
       const { count } = await supabase
         .from('challenge_participants')
         .select('*', { count: 'exact', head: true })
@@ -104,8 +118,8 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
       challenge.participants = count || 0;
     }
 
-    console.log('Final completed challenges:', completedChallenges);
-    return completedChallenges;
+    console.log('Final completed challenges:', finalCompletedChallenges);
+    return finalCompletedChallenges;
   } catch (error) {
     console.error('Error in fetchCompletedChallenges:', error);
     return [];
