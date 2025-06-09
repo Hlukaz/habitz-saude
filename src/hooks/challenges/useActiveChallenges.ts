@@ -52,8 +52,17 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
 
     console.log('Fetched challenges:', challenges);
 
+    // Filter out challenges that have ended (manual check)
+    const currentDate = new Date();
+    const filteredChallenges = (challenges || []).filter(challenge => {
+      const endDate = new Date(challenge.end_date);
+      return endDate >= currentDate; // Only include challenges that haven't ended yet
+    });
+
+    console.log('Filtered active challenges (excluding ended):', filteredChallenges);
+
     // Get creator profiles separately
-    const creatorIds = [...new Set((challenges || []).map(c => c.creator_id))];
+    const creatorIds = [...new Set(filteredChallenges.map(c => c.creator_id))];
     const { data: creatorProfiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, username, full_name')
@@ -64,7 +73,7 @@ const fetchUserActiveChallenges = async (userId: string): Promise<ChallengeWithD
     }
 
     // Map challenges to include additional details
-    const activeChallenges = (challenges || []).map(challenge => {
+    const activeChallenges = filteredChallenges.map(challenge => {
       const activityName = challenge.activity_types?.name || 'Qualquer Atividade';
       const creatorProfile = creatorProfiles?.find(p => p.id === challenge.creator_id);
       const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Usuário';

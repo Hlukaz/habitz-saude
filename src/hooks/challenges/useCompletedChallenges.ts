@@ -32,7 +32,9 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
     // Get the challenge IDs where the user is a participant
     const challengeIds = participantData.map(participant => participant.challenge_id);
 
-    // Get the completed challenge details
+    // Get challenges that are either marked as completed OR have ended
+    const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+    
     const { data: challenges, error: challengesError } = await supabase
       .from('challenges')
       .select(`
@@ -46,7 +48,7 @@ const fetchCompletedChallenges = async (userId: string): Promise<ChallengeWithDe
         )
       `)
       .in('id', challengeIds)
-      .eq('status', 'completed');
+      .or(`status.eq.completed,end_date.lt.${currentDate}`); // Get completed challenges OR challenges that have ended
 
     if (challengesError) {
       console.error('Error fetching completed challenges:', challengesError);
