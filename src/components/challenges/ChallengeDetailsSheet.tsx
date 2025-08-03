@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChallengeWithDetails } from '@/hooks/useChallenges';
 import ChallengeLiveRanking from './ChallengeLiveRanking';
-import ChallengeChat from './ChallengeChat';
+
 import ChallengeProgressPhotos from './ChallengeProgressPhotos';
 
 interface ChallengeDetailsSheetProps {
@@ -62,10 +62,9 @@ const ChallengeDetailsSheet = ({ challenge, children }: ChallengeDetailsSheetPro
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="ranking">Ranking</TabsTrigger>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="photos">Fotos</TabsTrigger>
           </TabsList>
 
@@ -138,9 +137,6 @@ const ChallengeDetailsSheet = ({ challenge, children }: ChallengeDetailsSheetPro
             <ChallengeLiveRanking challengeId={challenge.id} />
           </TabsContent>
 
-          <TabsContent value="chat">
-            <ChallengeChat challengeId={challenge.id} />
-          </TabsContent>
 
           <TabsContent value="photos">
             <ChallengeProgressPhotos challengeId={challenge.id} />

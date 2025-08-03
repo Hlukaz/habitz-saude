@@ -9,7 +9,7 @@ import MainLayout from "./components/MainLayout";
 import HomePage from "./pages/HomePage";
 import FriendsPage from "./pages/FriendsPage";
 import ChallengesPage from "./pages/ChallengesPage";
-import ChatPage from "./pages/ChatPage";
+
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -39,7 +39,7 @@ const App = () => {
                     <Route index element={<HomePage />} />
                     <Route path="friends" element={<FriendsPage />} />
                     <Route path="challenges" element={<ChallengesPage />} />
-                    <Route path="chat" element={<ChatPage />} />
+                    
                     <Route path="profile" element={<ProfilePage />} />
                   </Route>
                 </Route>
