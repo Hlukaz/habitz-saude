@@ -121,19 +121,7 @@ const StreakDisplay = ({
       </div>
       
       {/* Bloqueios de streaks (bônus para dias perdidos) */}
-      <div className="mt-3">
-        <div className="flex justify-between items-center mb-1">
-          <div className="flex items-center">
-            <Heart className="w-4 h-4 mr-1 text-rose-500" />
-            <span className="text-sm">Bloqueios</span>
-          </div>
-          <span className="text-sm font-semibold">{streakBlocks}/2</span>
-        </div>
-        <Progress value={streakBlocks / 2 * 100} className="h-2" />
-        {streakBlocks < 2 && daysToRecover > 0 && <p className="text-xs text-muted-foreground mt-1">
-            Recupera em {daysToRecover} dias
-          </p>}
-      </div>
+      
     </div>;
 };
 export default StreakDisplay;
