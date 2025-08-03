@@ -1,7 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserProfile } from '@/api/profileDataApi';
-import { fetchUserAchievements } from '@/api/achievementsApi';
 
 // Custom hook for user profile data
 export const useProfileData = (userId: string | undefined) => {
@@ -15,24 +14,12 @@ export const useProfileData = (userId: string | undefined) => {
     enabled: !!userId
   });
 
-  const { 
-    data: achievements = [],
-    isLoading: isLoadingAchievements,
-    error: achievementsError
-  } = useQuery({
-    queryKey: ['userAchievements', userId],
-    queryFn: () => userId ? fetchUserAchievements(userId) : Promise.reject('Usuário não autenticado'),
-    enabled: !!userId
-  });
-
   return {
     profile,
-    isLoading: isLoading || isLoadingAchievements,
-    error: error || achievementsError,
-    achievements
+    isLoading,
+    error
   };
 };
 
 // Re-export the API functions for backward compatibility
 export { fetchProfiles, fetchUserProfile } from '@/api/profileDataApi';
-export { fetchUserAchievements } from '@/api/achievementsApi';

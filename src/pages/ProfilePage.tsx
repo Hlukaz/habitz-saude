@@ -5,12 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useUserData } from '@/hooks/useUserData';
 import { UserProfile } from '@/types/userProfile';
-import AchievementsList from '@/components/AchievementsList';
+
 import ProfileHeader from '@/components/ProfileHeader';
 import ProfileSettings from '@/components/ProfileSettings';
 import ProfilePageHeader from '@/components/ProfilePageHeader';
 import ActivityTypePointsDisplay from '@/components/ActivityTypePointsDisplay';
-import { Trophy } from 'lucide-react';
+
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -18,8 +18,7 @@ const ProfilePage = () => {
   const { 
     profile, 
     isLoading, 
-    error, 
-    achievements 
+    error
   } = useProfileData(user?.id);
 
   const {
@@ -81,9 +80,6 @@ const ProfilePage = () => {
 
   const level = Math.floor((totalPoints || 0) / 50) + 1;
   const xpToNextLevel = (totalPoints % 50) / 50 * 100;
-  
-  // Calcular conquistas desbloqueadas
-  const unlockedAchievements = achievements.filter(a => a.unlocked);
 
   return (
     <div className="pb-20">
@@ -102,79 +98,6 @@ const ProfilePage = () => {
         <ActivityTypePointsDisplay 
           activityPoints={activityTypePoints || []}
           isLoading={activityTypePointsLoading}
-        />
-      </div>
-      
-      <div className="px-4 mb-6">
-        <div className="bg-card rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">Conquistas Desbloqueadas</h3>
-            <div className="flex items-center">
-              <Trophy className="w-5 h-5 text-levelup-accent mr-1" />
-              <span className="font-bold text-lg text-levelup-accent">
-                {unlockedAchievements.length}
-              </span>
-              <span className="text-muted-foreground">/{achievements.length}</span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-levelup-light p-3 rounded-lg flex items-center">
-              <div className="w-10 h-10 bg-amber-700 rounded-full flex items-center justify-center mr-3">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Bronze</p>
-                <p className="font-bold">
-                  {unlockedAchievements.filter(a => a.tier === 'bronze').length} conquistas
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-levelup-light p-3 rounded-lg flex items-center">
-              <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center mr-3">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Prata</p>
-                <p className="font-bold">
-                  {unlockedAchievements.filter(a => a.tier === 'silver').length} conquistas
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-levelup-light p-3 rounded-lg flex items-center">
-              <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Ouro</p>
-                <p className="font-bold">
-                  {unlockedAchievements.filter(a => a.tier === 'gold').length} conquistas
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-levelup-light p-3 rounded-lg flex items-center">
-              <div className="w-10 h-10 bg-levelup-primary rounded-full flex items-center justify-center mr-3">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Outras</p>
-                <p className="font-bold">
-                  {unlockedAchievements.filter(a => !a.tier).length} conquistas
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="px-4 mb-6">
-        <AchievementsList 
-          achievements={achievements} 
-          totalPoints={totalPoints}
-          activityTypePoints={activityTypePoints || []}
         />
       </div>
       
